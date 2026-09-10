@@ -1,0 +1,83 @@
+.avatar {
+  width: 100%;
+  height: auto;
+  max-width: 340px;
+  display: block;
+  filter: drop-shadow(0 18px 30px rgb(0 0 0 / 0.28));
+}
+
+/* まばたき。目のグループを縦につぶす */
+.avatar__eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: avatar-blink 5.4s infinite;
+}
+
+@keyframes avatar-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  94%, 96% { transform: scaleY(0.08); }
+}
+
+/* 口パク。話しているあいだだけ動かす */
+.avatar__mouth {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.avatar--speaking .avatar__mouth {
+  animation: avatar-talk 0.34s ease-in-out infinite;
+}
+
+@keyframes avatar-talk {
+  0%, 100% { transform: scaleY(0.35) scaleX(0.95); }
+  35% { transform: scaleY(1.15) scaleX(1.02); }
+  70% { transform: scaleY(0.6); }
+}
+
+/* 聞いているときは少しだけ前のめりに揺れる */
+.avatar--listening .avatar__head {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: avatar-nod 2.6s ease-in-out infinite;
+}
+
+@keyframes avatar-nod {
+  0%, 100% { transform: rotate(-1.6deg); }
+  50% { transform: rotate(1.6deg); }
+}
+
+.avatar--thinking .avatar__head {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  transform: rotate(-5deg);
+  transition: transform 0.4s ease;
+}
+
+/* 聞き取り中に広がる波紋 */
+.avatar__wave {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+}
+
+.avatar--listening .avatar__wave {
+  animation: avatar-wave 1.9s ease-out infinite;
+}
+
+.avatar--listening .avatar__wave--2 { animation-delay: 0.63s; }
+.avatar--listening .avatar__wave--3 { animation-delay: 1.26s; }
+
+@keyframes avatar-wave {
+  0% { transform: scale(0.72); opacity: 0.55; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar__eyes,
+  .avatar--speaking .avatar__mouth,
+  .avatar--listening .avatar__head,
+  .avatar--listening .avatar__wave {
+    animation: none;
+  }
+  .avatar--listening .avatar__wave { opacity: 0.3; }
+}

@@ -96,3 +96,75 @@
   }
   .avatar--listening .avatar__wave { opacity: 0.3; }
 }
+
+/* ===== 差し替えた画像でアバターを出すとき ===== */
+
+.avatar-photo {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.avatar-photo__img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: auto;
+  display: block;
+  user-select: none;
+}
+
+/* 聞き取り中の波紋 */
+.avatar-photo__ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 88%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #f18cc0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.avatar--listening .avatar-photo__ring {
+  animation: avatar-photo-wave 1.9s ease-out infinite;
+}
+
+.avatar--listening .avatar-photo__ring--2 { animation-delay: 0.95s; }
+
+@keyframes avatar-photo-wave {
+  0% { transform: translate(-50%, -50%) scale(0.72); opacity: 0.5; }
+  100% { transform: translate(-50%, -50%) scale(1.42); opacity: 0; }
+}
+
+/* 静止画でも、聞いている・話しているのが伝わるように少しだけ動かす */
+.avatar--listening .avatar-photo__img {
+  animation: avatar-photo-nod 2.6s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@keyframes avatar-photo-nod {
+  0%, 100% { transform: rotate(-1.4deg); }
+  50% { transform: rotate(1.4deg); }
+}
+
+.avatar--speaking .avatar-photo__img {
+  animation: avatar-photo-talk 0.9s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@keyframes avatar-photo-talk {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.5%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar--listening .avatar-photo__ring,
+  .avatar--listening .avatar-photo__img,
+  .avatar--speaking .avatar-photo__img {
+    animation: none;
+  }
+  .avatar--listening .avatar-photo__ring { opacity: 0.25; }
+}

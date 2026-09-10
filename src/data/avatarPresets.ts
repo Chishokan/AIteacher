@@ -25,6 +25,12 @@ export interface AvatarPreset {
   /** まばたき用の絵（目を閉じた一枚） */
   blink?: string
   /**
+   * まばたきをさせる表情。
+   * まばたきの絵は表情を 1 つしか持てないため、それに近い表情のときだけ使う。
+   * 省略すると待機中と聞き取り中だけ。
+   */
+  blinkMoods?: AvatarMood[]
+  /**
    * 背景が透過していない素材を、角の丸い枠に収めて表示する。
    * 白背景のイラストをそのまま使うときに指定する。
    */
@@ -47,13 +53,20 @@ export const AVATAR_PRESETS: AvatarPreset[] = [
   {
     id: 'male',
     name: 'ティーチャー（男性）',
-    description: '画像素材（public/avatar/male/）',
+    description: '8 つの表情を用意した画像素材',
     kind: 'images',
     images: {
-      // 用意した絵だけを書く。足りない表情は idle で代用される
-      idle: 'avatar/male/idle.png',
+      idle: 'avatar/male/idle.webp',
+      // 口の開きが違う 2 枚を交互に出して口パクにする
+      speaking: ['avatar/male/speaking-1.webp', 'avatar/male/speaking-2.webp'],
+      listening: 'avatar/male/listening.webp',
+      thinking: 'avatar/male/thinking.webp',
+      happy: 'avatar/male/happy.webp',
+      confused: 'avatar/male/confused.webp',
     },
-    framed: true,
+    blink: 'avatar/male/blink.webp',
+    // まばたきの絵はほほえんだ表情なので、同じ表情のときだけ使う
+    blinkMoods: ['idle', 'listening'],
   },
 ]
 

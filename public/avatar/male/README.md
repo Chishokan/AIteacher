@@ -1,20 +1,25 @@
 # ティーチャー（男性）の画像
 
-このフォルダに `idle.png` を置くと、設定画面の「アバター」で
-「ティーチャー（男性）」を選べるようになります。
+設定画面の「アバター」で「ティーチャー（男性）」を選ぶと使われます。
+登録は `src/data/avatarPresets.ts` の `male` プリセットです。
 
-- ファイル名: `idle.png`
-- サイズ: 1024 × 1024 px（正方形）推奨
-- 形式: PNG。白背景のままで大丈夫です（角の丸い枠に収めて表示します）
+| ファイル | 使われる場面 |
+| --- | --- |
+| `idle.webp` | 待機中 |
+| `speaking-1.webp` `speaking-2.webp` | 話しているあいだ交互に出す（口パク） |
+| `listening.webp` | 生徒の声を聞いているあいだ |
+| `thinking.webp` | 答えを確認しているあいだ |
+| `happy.webp` | 開始画面と、聞き取りが終わったとき |
+| `confused.webp` | うまく聞き取れなかったとき |
+| `blink.webp` | まばたき（待機中と聞き取り中だけ） |
 
-表情を増やしたい場合は、同じキャンバス・同じ顔の位置で描いた絵を
-`speaking-1.png` `speaking-2.png` `listening.png` などの名前で置き、
-`src/data/avatarPresets.ts` の `male` プリセットの `images` に書き足してください。
+すべて 1024 × 1024 px の透過 WebP です。
+元の PNG（1254 × 1254 px・合計 10MB）から変換して 1/12 の容量にしています。
+元データは git の履歴（コミット `afb0c0d`）に残っています。
 
-```ts
-images: {
-  idle: 'avatar/male/idle.png',
-  speaking: ['avatar/male/speaking-1.png', 'avatar/male/speaking-2.png'],
-  listening: 'avatar/male/listening.png',
-},
-```
+差し替えるときは、**すべての絵でキャンバスの大きさとキャラクターの位置・大きさをそろえてください。**
+ずれていると、表情が変わるたびに絵が跳ねて見えます。
+
+`blink.webp` はほほえんだ表情なので、同じ表情の待機中と聞き取り中でだけ使っています
+（`blinkMoods` で指定）。まばたきの絵を表情ごとに用意する場合は、
+プリセットを分けるか `blinkMoods` を広げてください。

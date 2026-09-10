@@ -11,6 +11,7 @@ interface ImageAvatarProps {
   onFailed: () => void
 }
 
+const DEFAULT_BLINK_MOODS: AvatarMood[] = ['idle', 'listening']
 const DEFAULT_MOUTH_FRAME_MS = 170
 const DEFAULT_BLINK_INTERVAL_MS = 5200
 const DEFAULT_BLINK_HOLD_MS = 130
@@ -62,10 +63,11 @@ export function ImageAvatar({ preset, mood, label, onFailed }: ImageAvatarProps)
     return () => clearInterval(timer)
   }, [frames, mouthFrameMs, reducedMotion])
 
-  // まばたき。話している最中は口の形が崩れるので止めておく
+  // まばたき。まばたきの絵に合う表情のときだけ動かす
+  const blinkHere = (preset.blinkMoods ?? DEFAULT_BLINK_MOODS).includes(mood)
   useEffect(() => {
     setBlinking(false)
-    if (reducedMotion || !preset.blink || mood === 'speaking' || mood === 'happy') return
+    if (reducedMotion || !preset.blink || !blinkHere) return
 
     let hold: ReturnType<typeof setTimeout> | undefined
     const timer = setInterval(() => {
@@ -77,7 +79,7 @@ export function ImageAvatar({ preset, mood, label, onFailed }: ImageAvatarProps)
       clearInterval(timer)
       clearTimeout(hold)
     }
-  }, [blinkHoldMs, blinkIntervalMs, mood, preset.blink, reducedMotion])
+  }, [blinkHere, blinkHoldMs, blinkIntervalMs, preset.blink, reducedMotion])
 
   const source = blinking && preset.blink ? preset.blink : (frames[frameIndex] ?? frames[0])
   if (!source) {

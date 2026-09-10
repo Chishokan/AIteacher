@@ -74,6 +74,7 @@ export function App() {
       {screen === 'start' && (
         <StartScreen
           scenario={scenario}
+          avatarId={settings.avatarId}
           onStart={begin}
           onOpenSettings={() => setScreen('settings')}
           onOpenHistory={() => setScreen('history')}
@@ -83,6 +84,7 @@ export function App() {
       {screen === 'interview' && (
         <InterviewScreen
           scenario={scenario}
+          avatarId={settings.avatarId}
           state={state}
           onRepeat={actions.repeat}
           onRetry={actions.retry}

@@ -1,3 +1,4 @@
+import { AvatarPicker } from './AvatarPicker'
 import { SubjectEditor } from './SubjectEditor'
 import { useJapaneseVoices } from '../hooks/useVoices'
 import { defaultSettings, type Settings } from '../logic/settings'
@@ -40,6 +41,13 @@ export function SettingsScreen({ settings, onChange, onClose }: SettingsScreenPr
             onChange={(event) => patch({ title: event.target.value })}
           />
         </label>
+      </div>
+
+      <div className="card">
+        <div className="field">
+          <span>アバター</span>
+          <AvatarPicker value={settings.avatarId} onChange={(avatarId) => patch({ avatarId })} />
+        </div>
       </div>
 
       <div className="card">

@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { AvatarMood } from '../types'
 import { DrawnAvatar } from './DrawnAvatar'
 import { ImageAvatar } from './ImageAvatar'
-import { avatarAssets } from '../data/avatarAssets'
+import { DEFAULT_AVATAR_ID, findPreset } from '../data/avatarPresets'
 
 interface AvatarProps {
   mood: AvatarMood
+  /** 使う見た目。省略すると組み込みの絵 */
+  presetId?: string
   /** スクリーンリーダー向けの説明 */
   label?: string
 }
@@ -13,20 +15,25 @@ interface AvatarProps {
 /**
  * アバターの表示口。
  *
- * `src/data/avatarAssets.ts` で画像を有効にしていればその絵を、
- * そうでなければ組み込みの絵を描く。画像が読み込めなかった場合も
- * 面談が止まらないよう、組み込みの絵に戻す。
+ * 設定で選ばれた見た目を描く。画像素材が読み込めなかった場合も面談が
+ * 止まらないよう、組み込みの絵に戻す。
  */
-export function Avatar({ mood, label }: AvatarProps) {
-  const [imagesBroken, setImagesBroken] = useState(false)
+export function Avatar({ mood, presetId = DEFAULT_AVATAR_ID, label }: AvatarProps) {
+  const preset = findPreset(presetId)
+  const [brokenPresetId, setBrokenPresetId] = useState<string | null>(null)
 
-  if (avatarAssets.enabled && !imagesBroken) {
+  // 別の見た目に切り替えたら、読み込み失敗の記録は捨てる
+  useEffect(() => {
+    setBrokenPresetId(null)
+  }, [preset.id])
+
+  if (preset.kind === 'images' && brokenPresetId !== preset.id) {
     return (
       <ImageAvatar
-        assets={avatarAssets}
+        preset={preset}
         mood={mood}
         label={label}
-        onFailed={() => setImagesBroken(true)}
+        onFailed={() => setBrokenPresetId(preset.id)}
       />
     )
   }

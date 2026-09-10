@@ -6,12 +6,20 @@ import { isSpeechSynthesisSupported } from '../speech/tts'
 
 interface StartScreenProps {
   scenario: Scenario
+  /** アバターの見た目 */
+  avatarId: string
   onStart: (studentName: string) => void
   onOpenSettings: () => void
   onOpenHistory: () => void
 }
 
-export function StartScreen({ scenario, onStart, onOpenSettings, onOpenHistory }: StartScreenProps) {
+export function StartScreen({
+  scenario,
+  avatarId,
+  onStart,
+  onOpenSettings,
+  onOpenHistory,
+}: StartScreenProps) {
   const [name, setName] = useState('')
 
   const canSpeak = isSpeechSynthesisSupported()
@@ -24,7 +32,7 @@ export function StartScreen({ scenario, onStart, onOpenSettings, onOpenHistory }
   return (
     <div className="start">
       <div className="start__avatar">
-        <Avatar mood="happy" />
+        <Avatar mood="happy" presetId={avatarId} />
       </div>
 
       <div className="start__panel">

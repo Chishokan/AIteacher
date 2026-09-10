@@ -5,6 +5,8 @@ import type { InterviewState } from '../hooks/useInterview'
 
 interface InterviewScreenProps {
   scenario: Scenario
+  /** アバターの見た目 */
+  avatarId: string
   state: InterviewState
   onRepeat: () => void
   onRetry: () => void
@@ -37,6 +39,7 @@ const STATUS: Record<InterviewState['phase'], string> = {
 
 export function InterviewScreen({
   scenario,
+  avatarId,
   state,
   onRepeat,
   onRetry,
@@ -70,7 +73,7 @@ export function InterviewScreen({
 
       <div className="stage">
         <div className="stage__avatar">
-          <Avatar mood={mood} />
+          <Avatar mood={mood} presetId={avatarId} />
           <span
             className={`stage__status${state.phase === 'listening' ? ' stage__status--listening' : ''}`}
           >

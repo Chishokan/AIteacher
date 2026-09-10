@@ -115,6 +115,26 @@
   user-select: none;
 }
 
+/* 背景が透過していない素材は、角の丸い枠に収める */
+.avatar-photo--framed .avatar-photo__frame {
+  border-radius: 22px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.3s ease;
+}
+
+/* 枠つきのときは、枠のふちを光らせて聞き取り中を示す */
+.avatar--listening.avatar-photo--framed .avatar-photo__frame {
+  animation: avatar-photo-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes avatar-photo-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(241 140 192 / 0.55), var(--shadow); }
+  50% { box-shadow: 0 0 0 10px rgb(241 140 192 / 0), var(--shadow); }
+}
+
 /* 聞き取り中の波紋 */
 .avatar-photo__ring {
   position: absolute;

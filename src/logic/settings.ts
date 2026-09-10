@@ -1,3 +1,4 @@
+import { DEFAULT_AVATAR_ID } from '../data/avatarPresets'
 import { DEFAULT_REPORT_SUBJECTS, DEFAULT_TEST_SUBJECTS } from '../data/scenario'
 
 export interface Settings {
@@ -16,6 +17,8 @@ export interface Settings {
   listenTimeoutSec: number
   /** 復唱して確認するか */
   confirmAnswers: boolean
+  /** アバターの見た目（AVATAR_PRESETS の id） */
+  avatarId: string
 }
 
 export const defaultSettings: Settings = {
@@ -27,4 +30,5 @@ export const defaultSettings: Settings = {
   pitch: 1.1,
   listenTimeoutSec: 8,
   confirmAnswers: true,
+  avatarId: DEFAULT_AVATAR_ID,
 }

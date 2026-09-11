@@ -14,16 +14,20 @@ export function formatAnswer(question: Question, answer: Answer | undefined): st
   }
 }
 
-/** アバターが復唱して確認する文章 */
-export function confirmSentence(question: Question, answer: Answer): string {
-  const subject = question.label ?? ''
+/**
+ * アバターが確認するときの文章。
+ *
+ * 聞き取った値は画面に大きく出すので、音声では読み上げない。
+ * 値を読み上げると、点数ぶんの音声を用意しなければならなくなるため。
+ */
+export function confirmSentence(question: Question): string {
   switch (question.kind) {
     case 'score':
-      return `${subject}は、${answer.value}点ですね。あっていますか。`
+      return 'こちらの点数であっていますか。'
     case 'grade':
-      return `${subject}は、${answer.value}ですね。あっていますか。`
+      return 'こちらの評定であっていますか。'
     default:
-      return `「${answer.text}」ですね。あっていますか。`
+      return '画面に出ている内容で、あっていますか。'
   }
 }
 

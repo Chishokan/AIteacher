@@ -373,6 +373,39 @@ p { margin: 0; line-height: 1.7; }
   color: #ffffff;
 }
 
+/* ---------- 聞き取った答えの確認 ---------- */
+
+.confirm { display: flex; flex-direction: column; gap: 12px; }
+
+.confirm__label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+/* 音声では値を読み上げないので、ここを大きく出す */
+.confirm__value {
+  font-size: clamp(48px, 9vw, 76px);
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+  letter-spacing: 0.02em;
+  padding: 18px 12px;
+  border-radius: 18px;
+  background: var(--accent-soft);
+  border: 2px solid var(--accent);
+  color: var(--accent-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.confirm__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.confirm__actions .pad__key { font-size: 20px; }
+
 /* ---------- アバターの選択 ---------- */
 
 .avatar-picker {

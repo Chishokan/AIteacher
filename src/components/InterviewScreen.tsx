@@ -1,5 +1,6 @@
 import { Avatar } from './Avatar'
 import { AnswerPad } from './AnswerPad'
+import { ConfirmPad } from './ConfirmPad'
 import type { AvatarMood, Scenario } from '../types'
 import type { InterviewState } from '../hooks/useInterview'
 
@@ -106,14 +107,20 @@ export function InterviewScreen({
 
           {state.error && <p className="banner banner--warn">{state.error}</p>}
 
-          {state.question && (
+          {state.pendingAnswer ? (
             <div className="card">
-              <AnswerPad
-                question={state.question}
-                onSubmit={onAnswer}
-                onSkip={onSkip}
+              <ConfirmPad
+                label={state.pendingAnswer.label}
+                display={state.pendingAnswer.display}
+                onAnswer={onAnswer}
               />
             </div>
+          ) : (
+            state.question && (
+              <div className="card">
+                <AnswerPad question={state.question} onSubmit={onAnswer} onSkip={onSkip} />
+              </div>
+            )
           )}
         </div>
       </div>

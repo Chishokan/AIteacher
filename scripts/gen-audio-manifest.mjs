@@ -12,11 +12,12 @@ import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const { buildScenario } = await import(path.join(root, 'src/data/scenario.ts'))
+const { confirmSentence } = await import(path.join(root, 'src/logic/interview.ts'))
 
 /** 定期テストの満点。変える場合はここも合わせる */
 const MAX_SCORE = 100
-/** 通知表の評定の範囲 */
-const GRADES = [1, 2, 3, 4, 5]
+/** 既定で復唱して確認する種類（useInterview と合わせる） */
+const CONFIRMED_KINDS = ['score', 'grade']
 
 const scenario = buildScenario({ maxScore: MAX_SCORE })
 const rows = []
@@ -73,70 +74,36 @@ for (const question of scenario.questions) {
 }
 
 // ---------------------------------------------------------------------------
-// 3. 復唱して確認する言い方
+// 3. 聞き取った答えの確認
 //
-//    「国語の得点は、」＋「78点ですね。あっていますか。」のように
-//    2 つをつないで鳴らす。教科ぶんと数字ぶんを掛け算せずに済む。
+//    答えの値は画面に大きく出すので、音声では読み上げない。
+//    そのため、点数や教科ごとに音声を用意する必要はない。
 // ---------------------------------------------------------------------------
+const confirmTexts = new Map()
 for (const question of scenario.questions) {
-  if (question.kind !== 'score' && question.kind !== 'grade') continue
+  const willConfirm = question.confirm ?? CONFIRMED_KINDS.includes(question.kind)
+  if (!willConfirm) continue
+  const text = confirmSentence(question)
+  if (!confirmTexts.has(text)) confirmTexts.set(text, [])
+  confirmTexts.get(text).push(question.label ?? question.section)
+}
+
+const CONFIRM_IDS = { score: 'confirm-score', grade: 'confirm-grade' }
+for (const [text, targets] of confirmTexts) {
+  const kind = text.includes('点数') ? 'score' : text.includes('評定') ? 'grade' : 'other'
   add(
-    `confirm-lead-${questionIds.get(question.id)}`,
-    `${question.label}は、`,
-    '確認｜前半（教科名）',
-    question.label ?? '',
-    '後ろに数字の音声を続けて鳴らすので、言い切らず、続く調子で',
+    CONFIRM_IDS[kind] ?? 'confirm-other',
+    text,
+    '確認',
+    targets.join('、'),
+    '答えの値は画面に大きく出るので、音声では読み上げない',
   )
 }
-
-for (let value = 0; value <= MAX_SCORE; value += 1) {
-  add(
-    `confirm-score-${value}`,
-    `${value}点ですね。あっていますか。`,
-    '確認｜後半（得点）',
-    `${value}点`,
-    '前に教科名の音声が来る。文の途中から始まる調子で',
-  )
-}
-
-for (const value of GRADES) {
-  add(
-    `confirm-grade-${value}`,
-    `${value}ですね。あっていますか。`,
-    '確認｜後半（評定）',
-    `評定${value}`,
-    '前に教科名の音声が来る。文の途中から始まる調子で',
-  )
-}
-
-// 選択肢の質問は、選べる言葉が決まっているのでそのまま録れる
-for (const question of scenario.questions) {
-  if (question.kind !== 'choice') continue
-  const id = questionIds.get(question.id)
-  for (const [index, choice] of (question.choices ?? []).entries()) {
-    add(
-      `confirm-choice-${id}-${index + 1}`,
-      `「${choice}」ですね。あっていますか。`,
-      '確認｜選択肢',
-      question.label ?? '',
-      choice,
-    )
-  }
-}
-
-// 自由記述は生徒が何を言うか決まらないため、内容を読み上げずに確認する
-add(
-  'confirm-free',
-  '画面に出ている内容で、あっていますか。',
-  '確認｜自由記述',
-  '次に伸ばしたい教科',
-  '生徒の言葉は読み上げられないため、画面を見てもらう言い方に変える',
-)
 
 add(
   'confirm-retry',
   'あっていたら「はい」、ちがったら「いいえ」と言ってください。',
-  '確認｜言い直しの案内',
+  '確認',
   '',
   '「はい」「いいえ」が聞き取れなかったとき',
 )
@@ -161,7 +128,7 @@ for (const [id, text, note] of RETRY_MESSAGES) add(id, text, '聞き直し', '',
 // ---------------------------------------------------------------------------
 const FLOW_MESSAGES = [
   ['skip', 'わかりました。この質問はとばしますね。', '「わからない」と言われたときと、「とばす」を押したとき'],
-  ['touch-accepted', 'ありがとう。', '画面のボタンから入力されたとき'],
+  ['touch-accepted', 'ありがとう。', '画面のボタンから入力されたとき。入力内容は読み上げない'],
   ['touch-fallback', 'うまく聞き取れないみたいです。画面から入力してください。', 'マイクが使えないとき'],
   ['touch-hint', '画面のボタンからも入力できます。', '3回続けて聞き取れなかったとき。前後に別の音声が続く'],
 ]

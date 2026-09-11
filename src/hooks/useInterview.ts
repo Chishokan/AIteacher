@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Answer, Question, Scenario, Session } from '../types'
 import { parseAnswer, parseYesNo } from '../logic/parseAnswer'
-import { confirmSentence } from '../logic/interview'
+import { confirmSentence, formatAnswer } from '../logic/interview'
 import { cancelSpeech, speak } from '../speech/tts'
 import { listen } from '../speech/stt'
 import type { Settings } from '../logic/settings'
@@ -41,6 +41,11 @@ export interface InterviewState {
   interim: string
   /** 「聞き取れませんでした」などの画面向けメッセージ */
   notice: string
+  /**
+   * 確認中の答え。値は音声で読み上げないため、ここを画面に大きく出す。
+   * 確認していないあいだは null
+   */
+  pendingAnswer: { label: string; display: string } | null
   /** 同じ質問で聞き直した回数 */
   attempts: number
   /** マイクが開いているか */
@@ -56,6 +61,7 @@ const INITIAL_STATE: InterviewState = {
   caption: '',
   interim: '',
   notice: '',
+  pendingAnswer: null,
   attempts: 0,
   micActive: false,
   error: null,
@@ -247,17 +253,30 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
     [ensureRunning, nextCommand, patch, takeCommand],
   )
 
-  /** 復唱して「はい / いいえ」を聞く。true なら確定 */
+  /**
+   * 聞き取った答えを画面に出して「はい / いいえ」を聞く。true なら確定。
+   * 値は読み上げず、画面を見て答えてもらう。
+   */
   const confirmAnswer = useCallback(
     async (question: Question, answer: Answer): Promise<boolean> => {
-      await say(confirmSentence(question, answer), 'confirming')
+      patch({
+        pendingAnswer: {
+          label: question.label ?? question.section,
+          display: formatAnswer(question, answer),
+        },
+      })
+      await say(confirmSentence(question), 'confirming')
       await sleep(MIC_OPEN_DELAY_MS, runAbortRef.current?.signal)
 
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const outcome = await listenOrCommand(question)
         if (outcome.via === 'command') {
           if (outcome.command.type === 'stop') throw new StoppedError()
-          // 確認中の画面操作は「訂正したい」とみなす
+          // 画面の「はい」「いいえ」はそのまま返事として扱う
+          if (outcome.command.type === 'touch') {
+            return parseYesNo(outcome.command.text) === true
+          }
+          // それ以外の操作（とばす・言い直し）は、確認をやめて質問に戻す
           queuedCommandsRef.current.unshift(outcome.command)
           return false
         }
@@ -278,13 +297,25 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
       }
       return true
     },
-    [listenOrCommand, say],
+    [listenOrCommand, patch, say],
+  )
+
+  /** 確認の表示を必ず片づけたうえで結果を返す */
+  const confirmAndClear = useCallback(
+    async (question: Question, answer: Answer): Promise<boolean> => {
+      try {
+        return await confirmAnswer(question, answer)
+      } finally {
+        patch({ pendingAnswer: null })
+      }
+    },
+    [confirmAnswer, patch],
   )
 
   /** 1 問ぶんの聞き取り。null なら中断 */
   const askQuestion = useCallback(
     async (question: Question, index: number): Promise<Answer> => {
-      patch({ index, question, attempts: 0, notice: '', error: null })
+      patch({ index, question, attempts: 0, notice: '', error: null, pendingAnswer: null })
       let attempts = 0
       let prompt = question.prompt
 
@@ -325,7 +356,7 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
             skipped: false,
             answeredAt: new Date().toISOString(),
           }
-          await say(`${command.text} ですね。ありがとう。`, 'thinking')
+          await say('ありがとう。', 'thinking')
           return answer
         }
 
@@ -388,17 +419,17 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
 
         const needsConfirm =
           settingsRef.current.confirmAnswers &&
-          (question.confirm ?? ['score', 'grade', 'choice'].includes(question.kind))
+          (question.confirm ?? ['score', 'grade'].includes(question.kind))
 
         if (!needsConfirm) return answer
-        if (await confirmAnswer(question, answer)) return answer
+        if (await confirmAndClear(question, answer)) return answer
 
         attempts = 0
         patch({ attempts, notice: '言い直してください。' })
         prompt = question.rePrompt ?? question.prompt
       }
     },
-    [confirmAnswer, ensureRunning, listenOrCommand, nextCommand, patch, say],
+    [confirmAndClear, ensureRunning, listenOrCommand, nextCommand, patch, say],
   )
 
   const start = useCallback(

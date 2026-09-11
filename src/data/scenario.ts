@@ -80,7 +80,7 @@ export function buildScenario(options: BuildOptions = {}): Scenario {
       kind: 'choice',
       choices: ['とてもよくできた', 'まあまあできた', 'ふつう', 'あまりできなかった', '悔しかった'],
       rePrompt: '選択肢の中から、いちばん近いものを選んで言ってください。',
-      confirm: true,
+      confirm: false,
     },
     {
       id: 'review:reason',
@@ -99,7 +99,7 @@ export function buildScenario(options: BuildOptions = {}): Scenario {
       prompt: '次のテストで、いちばん伸ばしたい教科はどれですか。',
       kind: 'free',
       rePrompt: 'もう一度、伸ばしたい教科の名前を言ってください。',
-      confirm: true,
+      confirm: false,
     },
     {
       id: 'goal:score',

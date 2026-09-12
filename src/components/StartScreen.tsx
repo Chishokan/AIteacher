@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Avatar } from './Avatar'
 import type { Scenario } from '../types'
 import { isSpeechRecognitionSupported } from '../speech/stt'
 import { isSpeechSynthesisSupported } from '../speech/tts'
+import { checkMicrophone, MIC_MESSAGES, type MicStatus } from '../speech/mic'
 
 interface StartScreenProps {
   scenario: Scenario
   /** アバターの見た目 */
   avatarId: string
+  /** マイクの許可を確認している最中 */
+  preparingMic: boolean
   onStart: (studentName: string) => void
   onOpenSettings: () => void
   onOpenHistory: () => void
@@ -16,11 +19,22 @@ interface StartScreenProps {
 export function StartScreen({
   scenario,
   avatarId,
+  preparingMic,
   onStart,
   onOpenSettings,
   onOpenHistory,
 }: StartScreenProps) {
   const [name, setName] = useState('')
+  const [micStatus, setMicStatus] = useState<MicStatus>('unsupported')
+
+  // すでに拒否されている場合は、はじめる前に気づけるようにしておく
+  useEffect(() => {
+    let active = true
+    void checkMicrophone().then((status) => active && setMicStatus(status))
+    return () => {
+      active = false
+    }
+  }, [])
 
   const canSpeak = isSpeechSynthesisSupported()
   const canListen = isSpeechRecognitionSupported()
@@ -70,10 +84,9 @@ export function StartScreen({
             画面入力だけでも回答できます。
           </p>
         )}
-        {canListen && !secure && (
-          <p className="banner banner--warn">
-            https（または localhost）で開かないとマイクが使えません。
-          </p>
+        {canListen && !secure && <p className="banner banner--danger">{MIC_MESSAGES.insecure}</p>}
+        {canListen && secure && micStatus === 'denied' && (
+          <p className="banner banner--danger">{MIC_MESSAGES.denied}</p>
         )}
 
         <label className="field">
@@ -91,9 +104,19 @@ export function StartScreen({
           />
         </label>
 
-        <button type="button" className="btn btn--primary btn--lg btn--block" onClick={() => onStart(name)}>
-          はじめる
+        <button
+          type="button"
+          className="btn btn--primary btn--lg btn--block"
+          disabled={preparingMic}
+          onClick={() => onStart(name)}
+        >
+          {preparingMic ? 'マイクの使用を許可してください…' : 'はじめる'}
         </button>
+        {preparingMic && (
+          <p className="muted" style={{ fontSize: 15 }}>
+            画面に出た確認で「許可」を選んでください。許可すると面談が始まります。
+          </p>
+        )}
 
         <div className="row">
           <button type="button" className="btn" onClick={onOpenSettings}>

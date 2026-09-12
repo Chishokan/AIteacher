@@ -141,6 +141,7 @@ p { margin: 0; line-height: 1.7; }
 .spacer { flex: 1; }
 
 .banner {
+  display: block;
   border-radius: 14px;
   padding: 14px 18px;
   font-size: 16px;
@@ -372,6 +373,30 @@ p { margin: 0; line-height: 1.7; }
   background: var(--accent);
   color: #ffffff;
 }
+
+/* ---------- マイクが自動で開かないときの手動ボタン ---------- */
+
+.tap-to-talk {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 86px;
+  padding: 16px 24px;
+  border-radius: 20px;
+  border: none;
+  text-align: left;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--accent), var(--lilac));
+  box-shadow: 0 12px 26px rgb(214 108 163 / 0.35);
+  transition: transform 0.12s ease;
+}
+
+.tap-to-talk:active { transform: scale(0.98); }
+.tap-to-talk__icon { font-size: 34px; flex: none; }
+.tap-to-talk > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.tap-to-talk strong { font-size: 21px; font-weight: 800; }
+.tap-to-talk__note { font-size: 14px; opacity: 0.9; line-height: 1.6; }
 
 /* ---------- 設定のオン・オフ ---------- */
 

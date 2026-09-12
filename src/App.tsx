@@ -11,6 +11,7 @@ import type { Settings } from './logic/settings'
 import type { Session } from './types'
 import { unlockSpeechSynthesis } from './speech/tts'
 import { unlockAudio } from './speech/clips'
+import { requestMicrophone, type MicStatus } from './speech/mic'
 
 type Screen = 'start' | 'interview' | 'result' | 'settings' | 'history'
 
@@ -20,6 +21,10 @@ export function App() {
   const [sessions, setSessions] = useState<Session[]>(() => loadSessions())
   const [viewing, setViewing] = useState<Session | null>(null)
   const [studentName, setStudentName] = useState('')
+  /** マイクの使用許可。はじめるボタンを押したときに確かめる */
+  const [micStatus, setMicStatus] = useState<MicStatus>('unsupported')
+  /** 許可のダイアログを出している最中 */
+  const [preparingMic, setPreparingMic] = useState(false)
 
   const scenario = useMemo(
     () =>
@@ -57,10 +62,19 @@ export function App() {
   const { state, actions } = useInterview({ scenario, settings, onFinish: handleFinish })
 
   const begin = useCallback(
-    (name: string) => {
+    async (name: string) => {
       // iOS は最初の再生をユーザー操作の中で行う必要がある
       unlockSpeechSynthesis()
       unlockAudio()
+
+      // 読み上げが終わってから音声認識が始まるころには、ブラウザが
+      // 「ユーザー操作の直後」とみなす時間を過ぎていて許可を聞けない。
+      // ボタンを押したこの場で許可を取っておく
+      setPreparingMic(true)
+      const status = await requestMicrophone()
+      setPreparingMic(false)
+      setMicStatus(status)
+
       setStudentName(name)
       setScreen('interview')
       void actions.start(name)
@@ -88,7 +102,8 @@ export function App() {
         <StartScreen
           scenario={scenario}
           avatarId={settings.avatarId}
-          onStart={begin}
+          preparingMic={preparingMic}
+          onStart={(name) => void begin(name)}
           onOpenSettings={() => setScreen('settings')}
           onOpenHistory={() => setScreen('history')}
         />
@@ -98,9 +113,10 @@ export function App() {
         <InterviewScreen
           scenario={scenario}
           avatarId={settings.avatarId}
+          micStatus={micStatus}
           state={state}
           onRepeat={actions.repeat}
-          onRetry={actions.retry}
+          onListenNow={actions.listenNow}
           onSkip={actions.skip}
           onStop={stopInterview}
           onAnswer={actions.answerByTouch}
@@ -110,7 +126,7 @@ export function App() {
       {screen === 'result' && viewing && (
         <ResultScreen
           session={viewing}
-          onRestart={() => begin(studentName || viewing.studentName)}
+          onRestart={() => void begin(studentName || viewing.studentName)}
           onHome={() => setScreen('start')}
         />
       )}

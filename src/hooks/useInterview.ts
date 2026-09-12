@@ -27,7 +27,7 @@ type Command =
   | { type: 'touch'; value?: number; text: string }
   | { type: 'skip' }
   | { type: 'repeat' }
-  | { type: 'retry' }
+  | { type: 'listen' }
   | { type: 'stop' }
 
 export interface InterviewState {
@@ -51,6 +51,11 @@ export interface InterviewState {
   attempts: number
   /** マイクが開いているか */
   micActive: boolean
+  /**
+   * マイクが使えず、自動では聞き取りを始められない状態。
+   * 端末によっては、画面をタップした直後でないと音声認識を始められない
+   */
+  micBlocked: boolean
   error: string | null
 }
 
@@ -65,6 +70,7 @@ const INITIAL_STATE: InterviewState = {
   pendingAnswer: null,
   attempts: 0,
   micActive: false,
+  micBlocked: false,
   error: null,
 }
 
@@ -321,7 +327,7 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
       await say(confirmSentence(question), 'confirming', [confirmClip(question)])
       await sleep(MIC_OPEN_DELAY_MS, runAbortRef.current?.signal)
 
-      for (let attempt = 0; attempt < 2; attempt += 1) {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
         const outcome = await listenOrCommand(question)
         if (outcome.via === 'command') {
           if (outcome.command.type === 'stop') throw new StoppedError()
@@ -329,6 +335,8 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
           if (outcome.command.type === 'touch') {
             return parseYesNo(outcome.command.text) === true
           }
+          // 「今すぐ話す」は、言い直さずにもう一度聞く
+          if (outcome.command.type === 'listen') continue
           // それ以外の操作（とばす・言い直し）は、確認をやめて質問に戻す
           queuedCommandsRef.current.unshift(outcome.command)
           return false
@@ -368,14 +376,21 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
   /** 1 問ぶんの聞き取り。null なら中断 */
   const askQuestion = useCallback(
     async (question: Question, index: number): Promise<Answer> => {
-      patch({ index, question, attempts: 0, notice: '', error: null, pendingAnswer: null })
+      patch({ index, question, attempts: 0, notice: '', error: null, pendingAnswer: null, micBlocked: false })
       let attempts = 0
       let line = askLine(question)
+      /** 「今すぐ話す」で来たときは、読み上げを飛ばしてマイクを開く */
+      let openMicNow = false
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        await say(line.text, 'asking', line.clips)
-        await sleep(MIC_OPEN_DELAY_MS, runAbortRef.current?.signal)
+        if (openMicNow) {
+          openMicNow = false
+          patch({ caption: line.text })
+        } else {
+          await say(line.text, 'asking', line.clips)
+          await sleep(MIC_OPEN_DELAY_MS, runAbortRef.current?.signal)
+        }
         ensureRunning()
 
         const outcome = await listenOrCommand(question)
@@ -387,8 +402,8 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
             line = askLine(question)
             continue
           }
-          if (command.type === 'retry') {
-            line = againLine(question)
+          if (command.type === 'listen') {
+            openMicNow = true
             continue
           }
           if (command.type === 'skip') {
@@ -426,8 +441,13 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
             // マイクが使えない状況。声で聞き直しても直らないため画面入力に切り替える
             await say('うまく聞き取れないみたいです。画面から入力してください。', 'thinking', ['touch-fallback'])
             // 何を聞かれているか分からなくならないよう、字幕は質問に戻しておく
-            patch({ caption: question.prompt })
+            patch({ caption: question.prompt, micBlocked: true })
             const command = await nextCommand()
+            // タップした直後ならマイクを開けることがあるので、読み上げを挟まずに試す
+            if (command.type === 'listen') {
+              openMicNow = true
+              continue
+            }
             queuedCommandsRef.current.unshift(command)
             line = againLine(question)
             continue
@@ -436,7 +456,7 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
           continue
         }
 
-        patch({ phase: 'thinking', notice: '' })
+        patch({ phase: 'thinking', notice: '', micBlocked: false })
         const parsed = parseAnswer(question, outcome.transcript)
 
         if (parsed.status === 'repeat') {
@@ -557,8 +577,12 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
       stop,
       /** 質問をもう一度読み上げる */
       repeat: () => sendCommand({ type: 'repeat' }),
-      /** すぐに聞き直す */
-      retry: () => sendCommand({ type: 'retry' }),
+      /**
+       * 読み上げを待たずに、すぐマイクを開く。
+       * 画面のタップから間をおかずに開くので、
+       * ユーザー操作の直後でないと音声認識を始められない端末でも動く。
+       */
+      listenNow: () => sendCommand({ type: 'listen' }),
       /** この質問をとばす */
       skip: () => sendCommand({ type: 'skip' }),
       /** 画面から答えを入力する */

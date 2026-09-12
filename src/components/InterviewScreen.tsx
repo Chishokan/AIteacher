@@ -2,15 +2,18 @@ import { Avatar } from './Avatar'
 import { AnswerPad } from './AnswerPad'
 import { ConfirmPad } from './ConfirmPad'
 import type { AvatarMood, Scenario } from '../types'
+import { MIC_MESSAGES, type MicStatus } from '../speech/mic'
 import type { InterviewState } from '../hooks/useInterview'
 
 interface InterviewScreenProps {
   scenario: Scenario
   /** アバターの見た目 */
   avatarId: string
+  /** マイクの使用許可 */
+  micStatus: MicStatus
   state: InterviewState
   onRepeat: () => void
-  onRetry: () => void
+  onListenNow: () => void
   onSkip: () => void
   onStop: () => void
   onAnswer: (text: string, value?: number) => void
@@ -41,9 +44,10 @@ const STATUS: Record<InterviewState['phase'], string> = {
 export function InterviewScreen({
   scenario,
   avatarId,
+  micStatus,
   state,
   onRepeat,
-  onRetry,
+  onListenNow,
   onSkip,
   onStop,
   onAnswer,
@@ -53,6 +57,9 @@ export function InterviewScreen({
   const done = state.phase === 'done' ? total : current
   const percent = total === 0 ? 0 : Math.round((done / total) * 100)
   const mood: AvatarMood = state.notice ? 'confused' : MOOD[state.phase]
+  // マイクの警告と同じことを二重に出さない
+  const micWarning = micStatus !== 'granted' && micStatus !== 'unsupported'
+  const notice = micWarning ? '' : state.notice
 
   return (
     <div className="interview">
@@ -96,8 +103,8 @@ export function InterviewScreen({
               <>
                 聞き取り中：<strong>{state.interim}</strong>
               </>
-            ) : state.notice ? (
-              <span className="banner banner--warn">{state.notice}</span>
+            ) : notice ? (
+              <span className="banner banner--warn">{notice}</span>
             ) : state.phase === 'listening' ? (
               'どうぞ話してください'
             ) : (
@@ -105,7 +112,25 @@ export function InterviewScreen({
             )}
           </div>
 
+          {micWarning && (
+            <p className="banner banner--danger">
+              {MIC_MESSAGES[micStatus]} 声で答えられないので、画面のボタンから入力してください。
+            </p>
+          )}
+
           {state.error && <p className="banner banner--warn">{state.error}</p>}
+
+          {state.micBlocked && (
+            <button type="button" className="tap-to-talk" onClick={onListenNow}>
+              <span className="tap-to-talk__icon" aria-hidden="true">🎤</span>
+              <span>
+                <strong>タップして話す</strong>
+                <span className="tap-to-talk__note">
+                  押したあとに声で答えてください。画面から入力しても構いません
+                </span>
+              </span>
+            </button>
+          )}
 
           {state.pendingAnswer ? (
             <div className="card">
@@ -129,8 +154,8 @@ export function InterviewScreen({
         <button type="button" className="btn" onClick={onRepeat}>
           もう一度言って
         </button>
-        <button type="button" className="btn" onClick={onRetry}>
-          今すぐ話す
+        <button type="button" className="btn" onClick={onListenNow}>
+          🎤 いま話す
         </button>
         <button type="button" className="btn" onClick={onSkip}>
           とばす

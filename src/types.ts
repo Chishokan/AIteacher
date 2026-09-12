@@ -34,6 +34,10 @@ export interface Question {
   confirm?: boolean
   /** この質問を飛ばしてよいか（「わからない」を許可する） */
   skippable?: boolean
+  /** 用意した音声のファイル名（拡張子なし）。無ければ読み上げにまわる */
+  audio?: string
+  /** 言い直しの音声のファイル名 */
+  audioAgain?: string
 }
 
 /** 面談シナリオ */

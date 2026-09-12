@@ -156,16 +156,21 @@ npm run preview
 
 ## 読み上げを、用意した音声に置き換える
 
-アプリがしゃべる文章の一覧を `audio/manifest.csv` に出せます。
+`public/audio/` に音声ファイルを置くと、その文章は読み上げではなく音声で鳴ります。
+**置かれていないものは読み上げにまわる**ので、全部そろっていなくても動きます。
 
 ```bash
+# 収録が必要なメッセージの一覧を作る（public/audio/manifest.csv）
 node --experimental-strip-types scripts/gen-audio-manifest.mjs
+
+# いま何本そろっていて、何が足りないかを見る
+node scripts/check-audio.mjs
 ```
 
 同じ文章になるものは 1 本にまとめてあります（教科ごとの言い直しは
 `again.mp3`「ごめんなさい。もう一度お願いします。」で共通）。
 既定の運用に必要なのは 19 本、追加設定ぶんを入れても 41 本です。
-収録の条件は `audio/README.md` を見てください。
+収録の条件は `public/audio/README.md` を見てください。
 
 ## データの扱い
 
@@ -179,6 +184,7 @@ node --experimental-strip-types scripts/gen-audio-manifest.mjs
 src/
 ├── data/scenario.ts        あらかじめ決めた質問（定期テスト、および追加設定ぶん）
 ├── speech/tts.ts           読み上げ（SpeechSynthesis）
+├── speech/clips.ts         用意した音声の再生と、無いときの読み上げへの切り替え
 ├── speech/stt.ts           聞き取り（SpeechRecognition）
 ├── logic/japaneseNumber.ts 「ななじゅうはち」「七十八」→ 78 の変換
 ├── logic/parseAnswer.ts    聞き取った文を質問の形式に合わせて解釈

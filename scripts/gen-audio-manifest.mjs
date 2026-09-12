@@ -4,7 +4,7 @@
  *   node --experimental-strip-types scripts/gen-audio-manifest.mjs
  *
  * シナリオ（src/data/scenario.ts）から組み立てるので、質問や教科を変えたら
- * 作り直せば一覧も追従する。出力は audio/manifest.csv と audio/manifest.json。
+ * 作り直せば一覧も追従する。出力は public/audio/manifest.csv と public/audio/manifest.json。
  *
  * 同じ文章になるものは 1 本にまとめる。たとえば「今回の手ごたえ」の言い直しと、
  * 選択肢が聞き取れなかったときの案内は同じ文章なので、音声も 1 本で足りる。
@@ -166,7 +166,7 @@ for (const question of full.questions) {
 // ---------------------------------------------------------------------------
 // 書き出し
 // ---------------------------------------------------------------------------
-const outDir = path.join(root, 'audio')
+const outDir = path.join(root, 'public/audio')
 mkdirSync(outDir, { recursive: true })
 
 const cell = (v) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)

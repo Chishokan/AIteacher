@@ -10,6 +10,7 @@ import { loadSessions, loadSettings, saveSession, saveSettings, deleteSession } 
 import type { Settings } from './logic/settings'
 import type { Session } from './types'
 import { unlockSpeechSynthesis } from './speech/tts'
+import { unlockAudio } from './speech/clips'
 
 type Screen = 'start' | 'interview' | 'result' | 'settings' | 'history'
 
@@ -57,8 +58,9 @@ export function App() {
 
   const begin = useCallback(
     (name: string) => {
-      // iOS は最初の読み上げをユーザー操作の中で行う必要がある
+      // iOS は最初の再生をユーザー操作の中で行う必要がある
       unlockSpeechSynthesis()
+      unlockAudio()
       setStudentName(name)
       setScreen('interview')
       void actions.start(name)

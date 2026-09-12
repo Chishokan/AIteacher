@@ -5,6 +5,8 @@ import type { Question, Scenario } from '../types'
  * 教科ごとに文言を変えると音声もその数だけ必要になるため、共通の一言にしている。
  */
 export const ASK_AGAIN = 'ごめんなさい。もう一度お願いします。'
+/** 共通の言い直しに使う音声 */
+export const ASK_AGAIN_AUDIO = 'again'
 
 /** 定期テストで得点を聞く教科（既定値） */
 export const DEFAULT_TEST_SUBJECTS = ['国語', '数学', '英語', '理科', '社会'] as const
@@ -37,9 +39,11 @@ interface BuildOptions {
   includeGoal?: boolean
 }
 
-function scoreQuestion(subject: string, maxScore: number): Question {
+function scoreQuestion(subject: string, maxScore: number, index: number): Question {
   return {
     id: `test:${subject}`,
+    audio: `q-test-${String(index + 1).padStart(2, '0')}`,
+    audioAgain: ASK_AGAIN_AUDIO,
     section: '定期テストの得点',
     label: `${subject}の得点`,
     prompt: `${subject}のテストは何点でしたか。点数を教えてください。`,
@@ -51,9 +55,11 @@ function scoreQuestion(subject: string, maxScore: number): Question {
   }
 }
 
-function gradeQuestion(subject: string): Question {
+function gradeQuestion(subject: string, index: number): Question {
   return {
     id: `report:${subject}`,
+    audio: `q-report-${String(index + 1).padStart(2, '0')}`,
+    audioAgain: ASK_AGAIN_AUDIO,
     section: '通知表の評定',
     label: `${subject}の評定`,
     prompt: `通知表の${subject}の評定はいくつでしたか。`,
@@ -79,20 +85,24 @@ export function buildScenario(options: BuildOptions = {}): Scenario {
   const questions: Question[] = [
     {
       id: 'intro:ready',
+      audio: 'q-intro-ready',
       section: 'はじめに',
       label: '準備はいいですか',
       prompt: 'これから、テストの点数について聞かせてください。準備はいいですか。',
       kind: 'yesno',
       confirm: false,
     },
-    ...testSubjects.map((s) => scoreQuestion(s, maxScore)),
+    ...testSubjects.map((s, i) => scoreQuestion(s, maxScore, i)),
   ]
 
-  if (includeReport) questions.push(...reportSubjects.map(gradeQuestion))
+  if (includeReport) questions.push(...reportSubjects.map((s, i) => gradeQuestion(s, i)))
 
   const reviewQuestions: Question[] = [
     {
       id: 'review:mood',
+      audio: 'q-review-mood',
+      // 言い直しの文章は、選択肢が聞き取れなかったときの案内と同じなので使いまわす
+      audioAgain: 'err-choice',
       section: 'ふりかえり',
       label: '今回の手ごたえ',
       prompt: '今回の成績について、自分ではどう感じていますか。',
@@ -103,6 +113,8 @@ export function buildScenario(options: BuildOptions = {}): Scenario {
     },
     {
       id: 'review:reason',
+      audio: 'q-review-reason',
+      audioAgain: 'q-review-reason-again',
       section: 'ふりかえり',
       label: 'うまくいった / いかなかった理由',
       prompt: 'そう感じたのはどうしてですか。理由を聞かせてください。',
@@ -116,6 +128,8 @@ export function buildScenario(options: BuildOptions = {}): Scenario {
   const goalQuestions: Question[] = [
     {
       id: 'goal:subject',
+      audio: 'q-goal-subject',
+      audioAgain: 'q-goal-subject-again',
       section: '次の目標',
       label: '次に伸ばしたい教科',
       prompt: '次のテストで、いちばん伸ばしたい教科はどれですか。',
@@ -125,6 +139,8 @@ export function buildScenario(options: BuildOptions = {}): Scenario {
     },
     {
       id: 'goal:score',
+      audio: 'q-goal-score',
+      audioAgain: ASK_AGAIN_AUDIO,
       section: '次の目標',
       label: '次の目標点',
       prompt: 'その教科で、次は何点を目指しますか。目標の点数を教えてください。',
@@ -136,6 +152,8 @@ export function buildScenario(options: BuildOptions = {}): Scenario {
     },
     {
       id: 'goal:action',
+      audio: 'q-goal-action',
+      audioAgain: 'q-goal-action-again',
       section: '次の目標',
       label: '今日から始めること',
       prompt: 'その目標のために、今日から始められることを1つ教えてください。',

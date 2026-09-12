@@ -10,7 +10,7 @@ export type ParseResult =
   /** 「もう一回言って」など、質問の読み上げをやり直したい */
   | { status: 'repeat' }
   /** 聞き取れたが回答として解釈できなかった */
-  | { status: 'unclear'; reason: string }
+  | { status: 'unclear'; reason: string; clip: string }
 
 const AFFIRMATIVE = [
   'はい', 'うん', 'ええ', 'そうです', 'そう', 'そのとおり', 'あってます', 'あってる',
@@ -93,7 +93,7 @@ export function matchChoice(input: string, choices: readonly string[]): string |
 /** 音声認識テキストを、質問の形式に合わせて解釈する */
 export function parseAnswer(question: Question, transcript: string): ParseResult {
   const text = normalize(transcript)
-  if (!text) return { status: 'unclear', reason: 'ごめんなさい、聞き取れませんでした。' }
+  if (!text) return { status: 'unclear', reason: 'ごめんなさい、聞き取れませんでした。', clip: 'err-unheard' }
 
   if (isPhrase(text, REPEAT)) return { status: 'repeat' }
   if (question.skippable !== false && isPhrase(text, SKIP)) {
@@ -105,10 +105,10 @@ export function parseAnswer(question: Question, transcript: string): ParseResult
       const max = question.maxScore ?? 100
       const value = parseNumber(transcript)
       if (value === null) {
-        return { status: 'unclear', reason: `点数を、0から${max}までの数字で言ってください。` }
+        return { status: 'unclear', reason: `点数を、0から${max}までの数字で言ってください。`, clip: 'err-score-format' }
       }
       if (value < 0 || value > max) {
-        return { status: 'unclear', reason: `${value}点は満点をこえています。0から${max}までで言ってください。` }
+        return { status: 'unclear', reason: `満点をこえています。0から${max}までの数字で言ってください。`, clip: 'err-score-over' }
       }
       return { status: 'ok', value, text: `${value}点` }
     }
@@ -116,10 +116,10 @@ export function parseAnswer(question: Question, transcript: string): ParseResult
     case 'grade': {
       const value = parseNumber(transcript, '')
       if (value === null) {
-        return { status: 'unclear', reason: '評定を、1から5の数字で言ってください。' }
+        return { status: 'unclear', reason: '評定を、1から5の数字で言ってください。', clip: 'err-grade-format' }
       }
       if (!Number.isInteger(value) || value < 1 || value > 5) {
-        return { status: 'unclear', reason: '評定は1から5です。もう一度言ってください。' }
+        return { status: 'unclear', reason: '評定は1から5です。もう一度言ってください。', clip: 'err-grade-range' }
       }
       return { status: 'ok', value, text: `${value}` }
     }
@@ -127,7 +127,7 @@ export function parseAnswer(question: Question, transcript: string): ParseResult
     case 'yesno': {
       const yes = parseYesNo(transcript)
       if (yes === null) {
-        return { status: 'unclear', reason: '「はい」か「いいえ」で答えてください。' }
+        return { status: 'unclear', reason: '「はい」か「いいえ」で答えてください。', clip: 'err-yesno' }
       }
       return { status: 'ok', text: yes ? 'はい' : 'いいえ' }
     }
@@ -135,14 +135,14 @@ export function parseAnswer(question: Question, transcript: string): ParseResult
     case 'choice': {
       const choice = matchChoice(transcript, question.choices ?? [])
       if (!choice) {
-        return { status: 'unclear', reason: '選択肢の中から、いちばん近いものを選んで言ってください。' }
+        return { status: 'unclear', reason: '選択肢の中から、いちばん近いものを選んで言ってください。', clip: 'err-choice' }
       }
       return { status: 'ok', text: choice }
     }
 
     case 'free': {
       if (text.length < 2) {
-        return { status: 'unclear', reason: 'もう少しくわしく聞かせてください。' }
+        return { status: 'unclear', reason: 'もう少しくわしく聞かせてください。', clip: 'err-free' }
       }
       return { status: 'ok', text: transcript.trim() }
     }

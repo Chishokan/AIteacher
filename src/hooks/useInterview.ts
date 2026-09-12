@@ -3,6 +3,7 @@ import type { Answer, Question, Scenario, Session } from '../types'
 import { parseAnswer, parseYesNo } from '../logic/parseAnswer'
 import { confirmSentence, formatAnswer } from '../logic/interview'
 import { cancelSpeech, speak } from '../speech/tts'
+import { playClips } from '../speech/clips'
 import { listen } from '../speech/stt'
 import type { Settings } from '../logic/settings'
 
@@ -73,12 +74,52 @@ const MAX_VOICE_ATTEMPTS = 3
 const MIC_OPEN_DELAY_MS = 300
 
 /**
+ * アバターが一度にしゃべる内容。
+ * clips が空のときは、文章をそのまま読み上げる。
+ */
+interface Line {
+  text: string
+  clips: string[]
+}
+
+/** 複数の文をつなぐ。1 つでも音声がないものが混ざれば、全体を読み上げにまわす */
+function join(...parts: Line[]): Line {
+  const text = parts.map((part) => part.text).join(' ')
+  const clips = parts.every((part) => part.clips.length > 0)
+    ? parts.flatMap((part) => part.clips)
+    : []
+  return { text, clips }
+}
+
+/**
  * 聞き直しが続いたら、画面入力もできることを伝える。
  * 何を聞かれているのかを見失わないよう、質問文は必ず後ろに残す。
  */
-function withTouchHint(question: Question, lead: string, attempts: number): string {
+function withTouchHint(question: Question, lead: Line, attempts: number): Line {
   if (attempts < MAX_VOICE_ATTEMPTS) return lead
-  return `${lead} 画面のボタンからも入力できます。${question.rePrompt ?? question.prompt}`
+  return join(
+    lead,
+    { text: '画面のボタンからも入力できます。', clips: ['touch-hint'] },
+    againLine(question),
+  )
+}
+
+/** 質問そのもの */
+function askLine(question: Question): Line {
+  return { text: question.prompt, clips: question.audio ? [question.audio] : [] }
+}
+
+/** 聞き取れなかったときの言い直し */
+function againLine(question: Question): Line {
+  if (!question.rePrompt) return askLine(question)
+  return { text: question.rePrompt, clips: question.audioAgain ? [question.audioAgain] : [] }
+}
+
+/** 確認のときに鳴らす音声。値は画面に出すので、種類ぶんだけあればよい */
+function confirmClip(question: Question): string {
+  if (question.kind === 'score') return 'confirm-score'
+  if (question.kind === 'grade') return 'confirm-grade'
+  return 'confirm-other'
 }
 
 class StoppedError extends Error {
@@ -184,13 +225,25 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
     if (runAbortRef.current?.signal.aborted) throw new StoppedError()
   }, [])
 
-  /** アバターにしゃべらせる */
+  /**
+   * アバターにしゃべらせる。
+   *
+   * clips に音声ファイルの名前をわたすと、それを順番に鳴らす。
+   * 1 本でも置かれていなければ、文章をそのまま読み上げる。
+   */
   const say = useCallback(
-    async (text: string, phase: Phase) => {
+    async (text: string, phase: Phase, clips: string[] = []) => {
       ensureRunning()
       const step = new AbortController()
       stepAbortRef.current = step
       patch({ phase, caption: text, interim: '', micActive: false })
+
+      const usable = clips.filter(Boolean)
+      if (usable.length > 0 && (await playClips(usable, step.signal))) {
+        ensureRunning()
+        return
+      }
+
       try {
         await speak(text, {
           rate: settingsRef.current.rate,
@@ -265,7 +318,7 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
           display: formatAnswer(question, answer),
         },
       })
-      await say(confirmSentence(question), 'confirming')
+      await say(confirmSentence(question), 'confirming', [confirmClip(question)])
       await sleep(MIC_OPEN_DELAY_MS, runAbortRef.current?.signal)
 
       for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -283,7 +336,7 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
         if (outcome.transcript === null) {
           // 無言は「そのとおり」とみなさず、もう一度だけ聞く
           if (attempt === 0) {
-            await say('あっていたら「はい」、ちがったら「いいえ」と言ってください。', 'confirming')
+            await say('あっていたら「はい」、ちがったら「いいえ」と言ってください。', 'confirming', ['confirm-retry'])
             await sleep(MIC_OPEN_DELAY_MS, runAbortRef.current?.signal)
             continue
           }
@@ -292,7 +345,7 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
         const yes = parseYesNo(outcome.transcript)
         if (yes === true) return true
         if (yes === false) return false
-        await say('あっていたら「はい」、ちがったら「いいえ」と言ってください。', 'confirming')
+        await say('あっていたら「はい」、ちがったら「いいえ」と言ってください。', 'confirming', ['confirm-retry'])
         await sleep(MIC_OPEN_DELAY_MS, runAbortRef.current?.signal)
       }
       return true
@@ -317,11 +370,11 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
     async (question: Question, index: number): Promise<Answer> => {
       patch({ index, question, attempts: 0, notice: '', error: null, pendingAnswer: null })
       let attempts = 0
-      let prompt = question.prompt
+      let line = askLine(question)
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        await say(prompt, 'asking')
+        await say(line.text, 'asking', line.clips)
         await sleep(MIC_OPEN_DELAY_MS, runAbortRef.current?.signal)
         ensureRunning()
 
@@ -331,15 +384,15 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
           const { command } = outcome
           if (command.type === 'stop') throw new StoppedError()
           if (command.type === 'repeat') {
-            prompt = question.prompt
+            line = askLine(question)
             continue
           }
           if (command.type === 'retry') {
-            prompt = question.rePrompt ?? question.prompt
+            line = againLine(question)
             continue
           }
           if (command.type === 'skip') {
-            await say('わかりました。この質問はとばしますね。', 'thinking')
+            await say('わかりました。この質問はとばしますね。', 'thinking', ['skip'])
             return {
               questionId: question.id,
               viaTouch: true,
@@ -356,7 +409,7 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
             skipped: false,
             answeredAt: new Date().toISOString(),
           }
-          await say('ありがとう。', 'thinking')
+          await say('ありがとう。', 'thinking', ['touch-accepted'])
           return answer
         }
 
@@ -371,15 +424,15 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
           })
           if (outcome.failure === 'error') {
             // マイクが使えない状況。声で聞き直しても直らないため画面入力に切り替える
-            await say('うまく聞き取れないみたいです。画面から入力してください。', 'thinking')
+            await say('うまく聞き取れないみたいです。画面から入力してください。', 'thinking', ['touch-fallback'])
             // 何を聞かれているか分からなくならないよう、字幕は質問に戻しておく
             patch({ caption: question.prompt })
             const command = await nextCommand()
             queuedCommandsRef.current.unshift(command)
-            prompt = question.rePrompt ?? question.prompt
+            line = againLine(question)
             continue
           }
-          prompt = withTouchHint(question, question.rePrompt ?? question.prompt, attempts)
+          line = withTouchHint(question, againLine(question), attempts)
           continue
         }
 
@@ -387,11 +440,11 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
         const parsed = parseAnswer(question, outcome.transcript)
 
         if (parsed.status === 'repeat') {
-          prompt = question.prompt
+          line = askLine(question)
           continue
         }
         if (parsed.status === 'skip') {
-          await say('わかりました。この質問はとばしますね。', 'thinking')
+          await say('わかりました。この質問はとばしますね。', 'thinking', ['skip'])
           return {
             questionId: question.id,
             transcript: outcome.transcript,
@@ -403,7 +456,7 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
         if (parsed.status === 'unclear') {
           attempts += 1
           patch({ attempts, notice: parsed.reason })
-          prompt = withTouchHint(question, parsed.reason, attempts)
+          line = withTouchHint(question, { text: parsed.reason, clips: [parsed.clip] }, attempts)
           continue
         }
 
@@ -426,7 +479,7 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
 
         attempts = 0
         patch({ attempts, notice: '言い直してください。' })
-        prompt = question.rePrompt ?? question.prompt
+        line = againLine(question)
       }
     },
     [confirmAndClear, ensureRunning, listenOrCommand, nextCommand, patch, say],
@@ -456,7 +509,7 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
       setState({ ...INITIAL_STATE, phase: 'greeting' })
 
       try {
-        await say(currentScenario.greeting, 'greeting')
+        await say(currentScenario.greeting, 'greeting', ['greeting'])
 
         for (const [index, question] of currentScenario.questions.entries()) {
           const answer = await askQuestion(question, index)
@@ -464,7 +517,7 @@ export function useInterview({ scenario, settings, onFinish }: UseInterviewOptio
           patch({ answers: [...session.answers] })
         }
 
-        await say(currentScenario.closing, 'closing')
+        await say(currentScenario.closing, 'closing', ['closing'])
         session.finishedAt = new Date().toISOString()
         patch({ phase: 'done', caption: currentScenario.closing, question: null, micActive: false })
         onFinishRef.current?.(session)

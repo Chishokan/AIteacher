@@ -59,11 +59,58 @@ export function SettingsScreen({ settings, onChange, onClose }: SettingsScreenPr
       </div>
 
       <div className="card">
-        <SubjectEditor
-          label="通知表で評定を聞く教科"
-          subjects={settings.reportSubjects}
-          onChange={(reportSubjects) => patch({ reportSubjects })}
-        />
+        <div className="field">
+          <span>追加で聞く内容</span>
+          <p className="muted" style={{ fontSize: 14, margin: 0 }}>
+            ふだんは定期テストの得点だけを聞きます。必要なときにここで足してください。
+          </p>
+        </div>
+
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={settings.includeReport}
+            onChange={(event) => patch({ includeReport: event.target.checked })}
+          />
+          <span>
+            <strong>通知表の評定</strong>
+            <span className="toggle__note">{settings.reportSubjects.length}教科ぶん質問が増えます</span>
+          </span>
+        </label>
+
+        {settings.includeReport && (
+          <div style={{ marginTop: 14 }}>
+            <SubjectEditor
+              label="通知表で評定を聞く教科"
+              subjects={settings.reportSubjects}
+              onChange={(reportSubjects) => patch({ reportSubjects })}
+            />
+          </div>
+        )}
+
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={settings.includeReview}
+            onChange={(event) => patch({ includeReview: event.target.checked })}
+          />
+          <span>
+            <strong>ふりかえり</strong>
+            <span className="toggle__note">今回の手ごたえと、そう感じた理由（2問）</span>
+          </span>
+        </label>
+
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={settings.includeGoal}
+            onChange={(event) => patch({ includeGoal: event.target.checked })}
+          />
+          <span>
+            <strong>次の目標</strong>
+            <span className="toggle__note">伸ばしたい教科・目標点・今日から始めること（3問）</span>
+          </span>
+        </label>
       </div>
 
       <div className="card">
@@ -143,14 +190,16 @@ export function SettingsScreen({ settings, onChange, onClose }: SettingsScreenPr
           />
         </label>
 
-        <label className="row" style={{ marginTop: 12 }}>
+        <label className="toggle" style={{ marginTop: 12 }}>
           <input
             type="checkbox"
-            style={{ width: 28, height: 28 }}
             checked={settings.confirmAnswers}
             onChange={(event) => patch({ confirmAnswers: event.target.checked })}
           />
-          <span>答えを復唱して確認する</span>
+          <span>
+            <strong>答えを確認する</strong>
+            <span className="toggle__note">聞き取った得点・評定を画面に出して、生徒に確かめてもらいます</span>
+          </span>
         </label>
       </div>
 

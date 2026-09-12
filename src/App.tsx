@@ -27,8 +27,19 @@ export function App() {
         testSubjects: settings.testSubjects,
         reportSubjects: settings.reportSubjects,
         maxScore: settings.maxScore,
+        includeReport: settings.includeReport,
+        includeReview: settings.includeReview,
+        includeGoal: settings.includeGoal,
       }),
-    [settings.title, settings.testSubjects, settings.reportSubjects, settings.maxScore],
+    [
+      settings.title,
+      settings.testSubjects,
+      settings.reportSubjects,
+      settings.maxScore,
+      settings.includeReport,
+      settings.includeReview,
+      settings.includeGoal,
+    ],
   )
 
   useEffect(() => {

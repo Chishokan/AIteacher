@@ -8,7 +8,9 @@
       "text": "こんにちは。わたしは、AIティーチャーです。これから成績について、いくつか質問します。マイクのマークが光ったら、はっきりと答えてくださいね。",
       "group": "あいさつ",
       "target": "",
-      "note": "面談のいちばん最初。ゆっくりめに"
+      "scope": "test",
+      "note": "面談のいちばん最初。ゆっくりめに",
+      "usedFor": []
     },
     {
       "id": "closing",
@@ -16,319 +18,36 @@
       "text": "ありがとうございました。話してくれた内容をまとめました。画面をいっしょに確認しましょう。",
       "group": "あいさつ",
       "target": "",
-      "note": "全問終わったあと"
+      "scope": "test",
+      "note": "全問終わったあと",
+      "usedFor": []
     },
     {
-      "id": "q-intro-ready",
-      "file": "q-intro-ready.mp3",
-      "text": "これから、テストの点数と通知表について聞かせてください。準備はいいですか。",
-      "group": "質問｜はじめに",
-      "target": "準備はいいですか",
-      "note": ""
-    },
-    {
-      "id": "q-test-01",
-      "file": "q-test-01.mp3",
-      "text": "国語のテストは何点でしたか。点数を教えてください。",
-      "group": "質問｜定期テストの得点",
-      "target": "国語の得点",
-      "note": ""
-    },
-    {
-      "id": "q-test-01-again",
-      "file": "q-test-01-again.mp3",
-      "text": "もう一度お願いします。国語の点数を、数字で言ってください。",
-      "group": "質問｜定期テストの得点",
-      "target": "国語の得点",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-test-02",
-      "file": "q-test-02.mp3",
-      "text": "数学のテストは何点でしたか。点数を教えてください。",
-      "group": "質問｜定期テストの得点",
-      "target": "数学の得点",
-      "note": ""
-    },
-    {
-      "id": "q-test-02-again",
-      "file": "q-test-02-again.mp3",
-      "text": "もう一度お願いします。数学の点数を、数字で言ってください。",
-      "group": "質問｜定期テストの得点",
-      "target": "数学の得点",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-test-03",
-      "file": "q-test-03.mp3",
-      "text": "英語のテストは何点でしたか。点数を教えてください。",
-      "group": "質問｜定期テストの得点",
-      "target": "英語の得点",
-      "note": ""
-    },
-    {
-      "id": "q-test-03-again",
-      "file": "q-test-03-again.mp3",
-      "text": "もう一度お願いします。英語の点数を、数字で言ってください。",
-      "group": "質問｜定期テストの得点",
-      "target": "英語の得点",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-test-04",
-      "file": "q-test-04.mp3",
-      "text": "理科のテストは何点でしたか。点数を教えてください。",
-      "group": "質問｜定期テストの得点",
-      "target": "理科の得点",
-      "note": ""
-    },
-    {
-      "id": "q-test-04-again",
-      "file": "q-test-04-again.mp3",
-      "text": "もう一度お願いします。理科の点数を、数字で言ってください。",
-      "group": "質問｜定期テストの得点",
-      "target": "理科の得点",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-test-05",
-      "file": "q-test-05.mp3",
-      "text": "社会のテストは何点でしたか。点数を教えてください。",
-      "group": "質問｜定期テストの得点",
-      "target": "社会の得点",
-      "note": ""
-    },
-    {
-      "id": "q-test-05-again",
-      "file": "q-test-05-again.mp3",
-      "text": "もう一度お願いします。社会の点数を、数字で言ってください。",
-      "group": "質問｜定期テストの得点",
-      "target": "社会の得点",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-report-01",
-      "file": "q-report-01.mp3",
-      "text": "通知表の国語の評定はいくつでしたか。",
-      "group": "質問｜通知表の評定",
-      "target": "国語の評定",
-      "note": ""
-    },
-    {
-      "id": "q-report-01-again",
-      "file": "q-report-01-again.mp3",
-      "text": "もう一度お願いします。国語の評定を、1から5の数字で言ってください。",
-      "group": "質問｜通知表の評定",
-      "target": "国語の評定",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-report-02",
-      "file": "q-report-02.mp3",
-      "text": "通知表の社会の評定はいくつでしたか。",
-      "group": "質問｜通知表の評定",
-      "target": "社会の評定",
-      "note": ""
-    },
-    {
-      "id": "q-report-02-again",
-      "file": "q-report-02-again.mp3",
-      "text": "もう一度お願いします。社会の評定を、1から5の数字で言ってください。",
-      "group": "質問｜通知表の評定",
-      "target": "社会の評定",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-report-03",
-      "file": "q-report-03.mp3",
-      "text": "通知表の数学の評定はいくつでしたか。",
-      "group": "質問｜通知表の評定",
-      "target": "数学の評定",
-      "note": ""
-    },
-    {
-      "id": "q-report-03-again",
-      "file": "q-report-03-again.mp3",
-      "text": "もう一度お願いします。数学の評定を、1から5の数字で言ってください。",
-      "group": "質問｜通知表の評定",
-      "target": "数学の評定",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-report-04",
-      "file": "q-report-04.mp3",
-      "text": "通知表の理科の評定はいくつでしたか。",
-      "group": "質問｜通知表の評定",
-      "target": "理科の評定",
-      "note": ""
-    },
-    {
-      "id": "q-report-04-again",
-      "file": "q-report-04-again.mp3",
-      "text": "もう一度お願いします。理科の評定を、1から5の数字で言ってください。",
-      "group": "質問｜通知表の評定",
-      "target": "理科の評定",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-report-05",
-      "file": "q-report-05.mp3",
-      "text": "通知表の英語の評定はいくつでしたか。",
-      "group": "質問｜通知表の評定",
-      "target": "英語の評定",
-      "note": ""
-    },
-    {
-      "id": "q-report-05-again",
-      "file": "q-report-05-again.mp3",
-      "text": "もう一度お願いします。英語の評定を、1から5の数字で言ってください。",
-      "group": "質問｜通知表の評定",
-      "target": "英語の評定",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-report-06",
-      "file": "q-report-06.mp3",
-      "text": "通知表の音楽の評定はいくつでしたか。",
-      "group": "質問｜通知表の評定",
-      "target": "音楽の評定",
-      "note": ""
-    },
-    {
-      "id": "q-report-06-again",
-      "file": "q-report-06-again.mp3",
-      "text": "もう一度お願いします。音楽の評定を、1から5の数字で言ってください。",
-      "group": "質問｜通知表の評定",
-      "target": "音楽の評定",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-report-07",
-      "file": "q-report-07.mp3",
-      "text": "通知表の美術の評定はいくつでしたか。",
-      "group": "質問｜通知表の評定",
-      "target": "美術の評定",
-      "note": ""
-    },
-    {
-      "id": "q-report-07-again",
-      "file": "q-report-07-again.mp3",
-      "text": "もう一度お願いします。美術の評定を、1から5の数字で言ってください。",
-      "group": "質問｜通知表の評定",
-      "target": "美術の評定",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-report-08",
-      "file": "q-report-08.mp3",
-      "text": "通知表の保健体育の評定はいくつでしたか。",
-      "group": "質問｜通知表の評定",
-      "target": "保健体育の評定",
-      "note": ""
-    },
-    {
-      "id": "q-report-08-again",
-      "file": "q-report-08-again.mp3",
-      "text": "もう一度お願いします。保健体育の評定を、1から5の数字で言ってください。",
-      "group": "質問｜通知表の評定",
-      "target": "保健体育の評定",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-report-09",
-      "file": "q-report-09.mp3",
-      "text": "通知表の技術・家庭の評定はいくつでしたか。",
-      "group": "質問｜通知表の評定",
-      "target": "技術・家庭の評定",
-      "note": ""
-    },
-    {
-      "id": "q-report-09-again",
-      "file": "q-report-09-again.mp3",
-      "text": "もう一度お願いします。技術・家庭の評定を、1から5の数字で言ってください。",
-      "group": "質問｜通知表の評定",
-      "target": "技術・家庭の評定",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-review-mood",
-      "file": "q-review-mood.mp3",
-      "text": "今回の成績について、自分ではどう感じていますか。",
-      "group": "質問｜ふりかえり",
-      "target": "今回の手ごたえ",
-      "note": ""
-    },
-    {
-      "id": "q-review-mood-again",
-      "file": "q-review-mood-again.mp3",
-      "text": "選択肢の中から、いちばん近いものを選んで言ってください。",
-      "group": "質問｜ふりかえり",
-      "target": "今回の手ごたえ",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-review-reason",
-      "file": "q-review-reason.mp3",
-      "text": "そう感じたのはどうしてですか。理由を聞かせてください。",
-      "group": "質問｜ふりかえり",
-      "target": "うまくいった / いかなかった理由",
-      "note": ""
-    },
-    {
-      "id": "q-review-reason-again",
-      "file": "q-review-reason-again.mp3",
-      "text": "もう一度、ゆっくりで大丈夫なので、理由を聞かせてください。",
-      "group": "質問｜ふりかえり",
-      "target": "うまくいった / いかなかった理由",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-goal-subject",
-      "file": "q-goal-subject.mp3",
-      "text": "次のテストで、いちばん伸ばしたい教科はどれですか。",
-      "group": "質問｜次の目標",
-      "target": "次に伸ばしたい教科",
-      "note": ""
-    },
-    {
-      "id": "q-goal-subject-again",
-      "file": "q-goal-subject-again.mp3",
-      "text": "もう一度、伸ばしたい教科の名前を言ってください。",
-      "group": "質問｜次の目標",
-      "target": "次に伸ばしたい教科",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-goal-score",
-      "file": "q-goal-score.mp3",
-      "text": "その教科で、次は何点を目指しますか。目標の点数を教えてください。",
-      "group": "質問｜次の目標",
-      "target": "次の目標点",
-      "note": ""
-    },
-    {
-      "id": "q-goal-score-again",
-      "file": "q-goal-score-again.mp3",
-      "text": "もう一度お願いします。目標の点数を、数字で言ってください。",
-      "group": "質問｜次の目標",
-      "target": "次の目標点",
-      "note": "聞き取れなかったときの言い直し"
-    },
-    {
-      "id": "q-goal-action",
-      "file": "q-goal-action.mp3",
-      "text": "その目標のために、今日から始められることを1つ教えてください。",
-      "group": "質問｜次の目標",
-      "target": "今日から始めること",
-      "note": ""
-    },
-    {
-      "id": "q-goal-action-again",
-      "file": "q-goal-action-again.mp3",
-      "text": "もう一度お願いします。今日から始められることを1つ教えてください。",
-      "group": "質問｜次の目標",
-      "target": "今日から始めること",
-      "note": "聞き取れなかったときの言い直し"
+      "id": "again",
+      "file": "again.mp3",
+      "text": "ごめんなさい。もう一度お願いします。",
+      "group": "聞き直し",
+      "target": "",
+      "scope": "test",
+      "note": "聞き取れなかったときの共通の言い直し。教科名は入れない",
+      "usedFor": [
+        "得点・評定が聞き取れなかったとき",
+        "国語の得点の言い直し",
+        "数学の得点の言い直し",
+        "英語の得点の言い直し",
+        "理科の得点の言い直し",
+        "社会の得点の言い直し",
+        "国語の評定の言い直し",
+        "社会の評定の言い直し",
+        "数学の評定の言い直し",
+        "理科の評定の言い直し",
+        "英語の評定の言い直し",
+        "音楽の評定の言い直し",
+        "美術の評定の言い直し",
+        "保健体育の評定の言い直し",
+        "技術・家庭の評定の言い直し",
+        "次の目標点の言い直し"
+      ]
     },
     {
       "id": "confirm-score",
@@ -336,7 +55,9 @@
       "text": "こちらの点数であっていますか。",
       "group": "確認",
       "target": "国語の得点、数学の得点、英語の得点、理科の得点、社会の得点、次の目標点",
-      "note": "答えの値は画面に大きく出るので、音声では読み上げない"
+      "scope": "test",
+      "note": "答えの値は画面に大きく出るので、音声では読み上げない",
+      "usedFor": []
     },
     {
       "id": "confirm-grade",
@@ -344,7 +65,9 @@
       "text": "こちらの評定であっていますか。",
       "group": "確認",
       "target": "国語の評定、社会の評定、数学の評定、理科の評定、英語の評定、音楽の評定、美術の評定、保健体育の評定、技術・家庭の評定",
-      "note": "答えの値は画面に大きく出るので、音声では読み上げない"
+      "scope": "option",
+      "note": "答えの値は画面に大きく出るので、音声では読み上げない",
+      "usedFor": []
     },
     {
       "id": "confirm-retry",
@@ -352,7 +75,9 @@
       "text": "あっていたら「はい」、ちがったら「いいえ」と言ってください。",
       "group": "確認",
       "target": "",
-      "note": "「はい」「いいえ」が聞き取れなかったとき"
+      "scope": "test",
+      "note": "「はい」「いいえ」が聞き取れなかったとき",
+      "usedFor": []
     },
     {
       "id": "err-unheard",
@@ -360,7 +85,11 @@
       "text": "ごめんなさい、聞き取れませんでした。",
       "group": "聞き直し",
       "target": "",
-      "note": ""
+      "scope": "test",
+      "note": "",
+      "usedFor": [
+        "答えとして受け取れなかったとき"
+      ]
     },
     {
       "id": "err-score-format",
@@ -368,7 +97,11 @@
       "text": "点数を、0から100までの数字で言ってください。",
       "group": "聞き直し",
       "target": "",
-      "note": "満点を100点から変える場合は録り直し"
+      "scope": "test",
+      "note": "満点を100点から変える場合は録り直し",
+      "usedFor": [
+        "答えとして受け取れなかったとき"
+      ]
     },
     {
       "id": "err-score-over",
@@ -376,23 +109,11 @@
       "text": "満点をこえています。0から100までの数字で言ってください。",
       "group": "聞き直し",
       "target": "",
-      "note": "聞き取った点数が満点を上回ったとき。数字は読み上げない"
-    },
-    {
-      "id": "err-grade-format",
-      "file": "err-grade-format.mp3",
-      "text": "評定を、1から5の数字で言ってください。",
-      "group": "聞き直し",
-      "target": "",
-      "note": ""
-    },
-    {
-      "id": "err-grade-range",
-      "file": "err-grade-range.mp3",
-      "text": "評定は1から5です。もう一度言ってください。",
-      "group": "聞き直し",
-      "target": "",
-      "note": ""
+      "scope": "test",
+      "note": "数字は読み上げない",
+      "usedFor": [
+        "答えとして受け取れなかったとき"
+      ]
     },
     {
       "id": "err-yesno",
@@ -400,7 +121,35 @@
       "text": "「はい」か「いいえ」で答えてください。",
       "group": "聞き直し",
       "target": "",
-      "note": ""
+      "scope": "test",
+      "note": "",
+      "usedFor": [
+        "答えとして受け取れなかったとき"
+      ]
+    },
+    {
+      "id": "err-grade-format",
+      "file": "err-grade-format.mp3",
+      "text": "評定を、1から5の数字で言ってください。",
+      "group": "聞き直し",
+      "target": "",
+      "scope": "option",
+      "note": "通知表を聞くときだけ",
+      "usedFor": [
+        "答えとして受け取れなかったとき"
+      ]
+    },
+    {
+      "id": "err-grade-range",
+      "file": "err-grade-range.mp3",
+      "text": "評定は1から5です。もう一度言ってください。",
+      "group": "聞き直し",
+      "target": "",
+      "scope": "option",
+      "note": "通知表を聞くときだけ",
+      "usedFor": [
+        "答えとして受け取れなかったとき"
+      ]
     },
     {
       "id": "err-choice",
@@ -408,7 +157,12 @@
       "text": "選択肢の中から、いちばん近いものを選んで言ってください。",
       "group": "聞き直し",
       "target": "",
-      "note": ""
+      "scope": "option",
+      "note": "",
+      "usedFor": [
+        "答えとして受け取れなかったとき",
+        "今回の手ごたえの言い直し"
+      ]
     },
     {
       "id": "err-free",
@@ -416,7 +170,11 @@
       "text": "もう少しくわしく聞かせてください。",
       "group": "聞き直し",
       "target": "",
-      "note": ""
+      "scope": "option",
+      "note": "",
+      "usedFor": [
+        "答えとして受け取れなかったとき"
+      ]
     },
     {
       "id": "skip",
@@ -424,7 +182,9 @@
       "text": "わかりました。この質問はとばしますね。",
       "group": "進行",
       "target": "",
-      "note": "「わからない」と言われたときと、「とばす」を押したとき"
+      "scope": "test",
+      "note": "「わからない」と言われたときと、「とばす」を押したとき",
+      "usedFor": []
     },
     {
       "id": "touch-accepted",
@@ -432,7 +192,9 @@
       "text": "ありがとう。",
       "group": "進行",
       "target": "",
-      "note": "画面のボタンから入力されたとき。入力内容は読み上げない"
+      "scope": "test",
+      "note": "画面のボタンから入力されたとき。入力内容は読み上げない",
+      "usedFor": []
     },
     {
       "id": "touch-fallback",
@@ -440,7 +202,9 @@
       "text": "うまく聞き取れないみたいです。画面から入力してください。",
       "group": "進行",
       "target": "",
-      "note": "マイクが使えないとき"
+      "scope": "test",
+      "note": "マイクが使えないとき",
+      "usedFor": []
     },
     {
       "id": "touch-hint",
@@ -448,7 +212,245 @@
       "text": "画面のボタンからも入力できます。",
       "group": "進行",
       "target": "",
-      "note": "3回続けて聞き取れなかったとき。前後に別の音声が続く"
+      "scope": "test",
+      "note": "3回続けて聞き取れなかったとき。前後に別の音声が続く",
+      "usedFor": []
+    },
+    {
+      "id": "q-intro-ready",
+      "file": "q-intro-ready.mp3",
+      "text": "これから、テストの点数について聞かせてください。準備はいいですか。",
+      "group": "質問｜はじめに",
+      "target": "準備はいいですか",
+      "scope": "test",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-test-01",
+      "file": "q-test-01.mp3",
+      "text": "国語のテストは何点でしたか。点数を教えてください。",
+      "group": "質問｜定期テストの得点",
+      "target": "国語の得点",
+      "scope": "test",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-test-02",
+      "file": "q-test-02.mp3",
+      "text": "数学のテストは何点でしたか。点数を教えてください。",
+      "group": "質問｜定期テストの得点",
+      "target": "数学の得点",
+      "scope": "test",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-test-03",
+      "file": "q-test-03.mp3",
+      "text": "英語のテストは何点でしたか。点数を教えてください。",
+      "group": "質問｜定期テストの得点",
+      "target": "英語の得点",
+      "scope": "test",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-test-04",
+      "file": "q-test-04.mp3",
+      "text": "理科のテストは何点でしたか。点数を教えてください。",
+      "group": "質問｜定期テストの得点",
+      "target": "理科の得点",
+      "scope": "test",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-test-05",
+      "file": "q-test-05.mp3",
+      "text": "社会のテストは何点でしたか。点数を教えてください。",
+      "group": "質問｜定期テストの得点",
+      "target": "社会の得点",
+      "scope": "test",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-report-01",
+      "file": "q-report-01.mp3",
+      "text": "通知表の国語の評定はいくつでしたか。",
+      "group": "質問｜通知表の評定",
+      "target": "国語の評定",
+      "scope": "option",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-report-02",
+      "file": "q-report-02.mp3",
+      "text": "通知表の社会の評定はいくつでしたか。",
+      "group": "質問｜通知表の評定",
+      "target": "社会の評定",
+      "scope": "option",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-report-03",
+      "file": "q-report-03.mp3",
+      "text": "通知表の数学の評定はいくつでしたか。",
+      "group": "質問｜通知表の評定",
+      "target": "数学の評定",
+      "scope": "option",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-report-04",
+      "file": "q-report-04.mp3",
+      "text": "通知表の理科の評定はいくつでしたか。",
+      "group": "質問｜通知表の評定",
+      "target": "理科の評定",
+      "scope": "option",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-report-05",
+      "file": "q-report-05.mp3",
+      "text": "通知表の英語の評定はいくつでしたか。",
+      "group": "質問｜通知表の評定",
+      "target": "英語の評定",
+      "scope": "option",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-report-06",
+      "file": "q-report-06.mp3",
+      "text": "通知表の音楽の評定はいくつでしたか。",
+      "group": "質問｜通知表の評定",
+      "target": "音楽の評定",
+      "scope": "option",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-report-07",
+      "file": "q-report-07.mp3",
+      "text": "通知表の美術の評定はいくつでしたか。",
+      "group": "質問｜通知表の評定",
+      "target": "美術の評定",
+      "scope": "option",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-report-08",
+      "file": "q-report-08.mp3",
+      "text": "通知表の保健体育の評定はいくつでしたか。",
+      "group": "質問｜通知表の評定",
+      "target": "保健体育の評定",
+      "scope": "option",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-report-09",
+      "file": "q-report-09.mp3",
+      "text": "通知表の技術・家庭の評定はいくつでしたか。",
+      "group": "質問｜通知表の評定",
+      "target": "技術・家庭の評定",
+      "scope": "option",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-review-mood",
+      "file": "q-review-mood.mp3",
+      "text": "今回の成績について、自分ではどう感じていますか。",
+      "group": "質問｜ふりかえり",
+      "target": "今回の手ごたえ",
+      "scope": "option",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-review-reason",
+      "file": "q-review-reason.mp3",
+      "text": "そう感じたのはどうしてですか。理由を聞かせてください。",
+      "group": "質問｜ふりかえり",
+      "target": "うまくいった / いかなかった理由",
+      "scope": "option",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-review-reason-again",
+      "file": "q-review-reason-again.mp3",
+      "text": "もう一度、ゆっくりで大丈夫なので、理由を聞かせてください。",
+      "group": "質問｜ふりかえり",
+      "target": "うまくいった / いかなかった理由",
+      "scope": "option",
+      "note": "聞き取れなかったときの言い直し",
+      "usedFor": [
+        "うまくいった / いかなかった理由の言い直し"
+      ]
+    },
+    {
+      "id": "q-goal-subject",
+      "file": "q-goal-subject.mp3",
+      "text": "次のテストで、いちばん伸ばしたい教科はどれですか。",
+      "group": "質問｜次の目標",
+      "target": "次に伸ばしたい教科",
+      "scope": "option",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-goal-subject-again",
+      "file": "q-goal-subject-again.mp3",
+      "text": "もう一度、伸ばしたい教科の名前を言ってください。",
+      "group": "質問｜次の目標",
+      "target": "次に伸ばしたい教科",
+      "scope": "option",
+      "note": "聞き取れなかったときの言い直し",
+      "usedFor": [
+        "次に伸ばしたい教科の言い直し"
+      ]
+    },
+    {
+      "id": "q-goal-score",
+      "file": "q-goal-score.mp3",
+      "text": "その教科で、次は何点を目指しますか。目標の点数を教えてください。",
+      "group": "質問｜次の目標",
+      "target": "次の目標点",
+      "scope": "option",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-goal-action",
+      "file": "q-goal-action.mp3",
+      "text": "その目標のために、今日から始められることを1つ教えてください。",
+      "group": "質問｜次の目標",
+      "target": "今日から始めること",
+      "scope": "option",
+      "note": "",
+      "usedFor": []
+    },
+    {
+      "id": "q-goal-action-again",
+      "file": "q-goal-action-again.mp3",
+      "text": "もう一度お願いします。今日から始められることを1つ教えてください。",
+      "group": "質問｜次の目標",
+      "target": "今日から始めること",
+      "scope": "option",
+      "note": "聞き取れなかったときの言い直し",
+      "usedFor": [
+        "今日から始めることの言い直し"
+      ]
     }
   ]
 }

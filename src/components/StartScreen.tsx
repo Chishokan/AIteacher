@@ -26,8 +26,14 @@ export function StartScreen({
   const canListen = isSpeechRecognitionSupported()
   const secure = typeof window !== 'undefined' && window.isSecureContext
 
-  const scoreCount = scenario.questions.filter((q) => q.section === '定期テストの得点').length
-  const gradeCount = scenario.questions.filter((q) => q.section === '通知表の評定').length
+  // 設定で章を出し分けるので、いま入っているものだけを数えて出す
+  const sections: Array<{ section: string; count: number }> = []
+  for (const question of scenario.questions) {
+    if (question.section === 'はじめに') continue
+    const last = sections[sections.length - 1]
+    if (last && last.section === question.section) last.count += 1
+    else sections.push({ section: question.section, count: 1 })
+  }
 
   return (
     <div className="start">
@@ -45,9 +51,11 @@ export function StartScreen({
         </div>
 
         <ul className="checklist">
-          <li>定期テストの得点を{scoreCount}問</li>
-          <li>通知表の評定を{gradeCount}問</li>
-          <li>ふりかえりと次の目標</li>
+          {sections.map(({ section, count }) => (
+            <li key={section}>
+              {section}を{count}問
+            </li>
+          ))}
           <li>答えた内容は、この端末の中だけに保存されます</li>
         </ul>
 

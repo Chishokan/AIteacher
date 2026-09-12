@@ -1,5 +1,11 @@
 import type { Question, Scenario } from '../types'
 
+/**
+ * 聞き取れなかったときの言い直し。
+ * 教科ごとに文言を変えると音声もその数だけ必要になるため、共通の一言にしている。
+ */
+export const ASK_AGAIN = 'ごめんなさい。もう一度お願いします。'
+
 /** 定期テストで得点を聞く教科（既定値） */
 export const DEFAULT_TEST_SUBJECTS = ['国語', '数学', '英語', '理科', '社会'] as const
 
@@ -23,6 +29,12 @@ interface BuildOptions {
   reportSubjects?: readonly string[]
   /** 定期テストの満点 */
   maxScore?: number
+  /** 通知表の評定も聞く */
+  includeReport?: boolean
+  /** ふりかえり（手ごたえ・理由）も聞く */
+  includeReview?: boolean
+  /** 次の目標も聞く */
+  includeGoal?: boolean
 }
 
 function scoreQuestion(subject: string, maxScore: number): Question {
@@ -31,7 +43,7 @@ function scoreQuestion(subject: string, maxScore: number): Question {
     section: '定期テストの得点',
     label: `${subject}の得点`,
     prompt: `${subject}のテストは何点でしたか。点数を教えてください。`,
-    rePrompt: `もう一度お願いします。${subject}の点数を、数字で言ってください。`,
+    rePrompt: ASK_AGAIN,
     kind: 'score',
     maxScore,
     confirm: true,
@@ -45,7 +57,7 @@ function gradeQuestion(subject: string): Question {
     section: '通知表の評定',
     label: `${subject}の評定`,
     prompt: `通知表の${subject}の評定はいくつでしたか。`,
-    rePrompt: `もう一度お願いします。${subject}の評定を、1から5の数字で言ってください。`,
+    rePrompt: ASK_AGAIN,
     kind: 'grade',
     confirm: true,
     skippable: true,
@@ -59,6 +71,9 @@ export function buildScenario(options: BuildOptions = {}): Scenario {
     testSubjects = DEFAULT_TEST_SUBJECTS,
     reportSubjects = DEFAULT_REPORT_SUBJECTS,
     maxScore = 100,
+    includeReport = false,
+    includeReview = false,
+    includeGoal = false,
   } = options
 
   const questions: Question[] = [
@@ -66,12 +81,16 @@ export function buildScenario(options: BuildOptions = {}): Scenario {
       id: 'intro:ready',
       section: 'はじめに',
       label: '準備はいいですか',
-      prompt: 'これから、テストの点数と通知表について聞かせてください。準備はいいですか。',
+      prompt: 'これから、テストの点数について聞かせてください。準備はいいですか。',
       kind: 'yesno',
       confirm: false,
     },
     ...testSubjects.map((s) => scoreQuestion(s, maxScore)),
-    ...reportSubjects.map(gradeQuestion),
+  ]
+
+  if (includeReport) questions.push(...reportSubjects.map(gradeQuestion))
+
+  const reviewQuestions: Question[] = [
     {
       id: 'review:mood',
       section: 'ふりかえり',
@@ -92,6 +111,9 @@ export function buildScenario(options: BuildOptions = {}): Scenario {
       confirm: false,
       skippable: true,
     },
+  ]
+
+  const goalQuestions: Question[] = [
     {
       id: 'goal:subject',
       section: '次の目標',
@@ -108,7 +130,7 @@ export function buildScenario(options: BuildOptions = {}): Scenario {
       prompt: 'その教科で、次は何点を目指しますか。目標の点数を教えてください。',
       kind: 'score',
       maxScore,
-      rePrompt: 'もう一度お願いします。目標の点数を、数字で言ってください。',
+      rePrompt: ASK_AGAIN,
       confirm: true,
       skippable: true,
     },
@@ -123,6 +145,9 @@ export function buildScenario(options: BuildOptions = {}): Scenario {
       skippable: true,
     },
   ]
+
+  if (includeReview) questions.push(...reviewQuestions)
+  if (includeGoal) questions.push(...goalQuestions)
 
   return {
     id: 'default',

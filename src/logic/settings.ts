@@ -19,6 +19,12 @@ export interface Settings {
   confirmAnswers: boolean
   /** アバターの見た目（AVATAR_PRESETS の id） */
   avatarId: string
+  /** 通知表の評定も聞く */
+  includeReport: boolean
+  /** ふりかえり（手ごたえ・理由）も聞く */
+  includeReview: boolean
+  /** 次の目標も聞く */
+  includeGoal: boolean
 }
 
 export const defaultSettings: Settings = {
@@ -31,4 +37,8 @@ export const defaultSettings: Settings = {
   listenTimeoutSec: 8,
   confirmAnswers: true,
   avatarId: DEFAULT_AVATAR_ID,
+  // まずは定期テストの聞き取りだけで運用する。必要になったら設定で足す
+  includeReport: false,
+  includeReview: false,
+  includeGoal: false,
 }

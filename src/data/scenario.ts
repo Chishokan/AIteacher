@@ -83,15 +83,26 @@ export function buildScenario(options: BuildOptions = {}): Scenario {
   } = options
 
   const questions: Question[] = [
-    {
-      id: 'intro:ready',
-      audio: 'q-intro-ready',
-      section: 'はじめに',
-      label: '準備はいいですか',
-      prompt: 'これから、テストの点数について聞かせてください。準備はいいですか。',
-      kind: 'yesno',
-      confirm: false,
-    },
+    // 通知表を聞くかどうかで導入の言い方が変わるので、音声も分けている
+    includeReport
+      ? {
+          id: 'intro:ready',
+          audio: 'q-intro-ready',
+          section: 'はじめに',
+          label: '準備はいいですか',
+          prompt: 'これから、テストの点数と通知表について聞かせてください。準備はいいですか。',
+          kind: 'yesno',
+          confirm: false,
+        }
+      : {
+          id: 'intro:ready',
+          audio: 'q-intro-ready2',
+          section: 'はじめに',
+          label: '準備はいいですか',
+          prompt: 'これから、テストの点数について聞かせてください。準備はいいですか。',
+          kind: 'yesno',
+          confirm: false,
+        },
     ...testSubjects.map((s, i) => scoreQuestion(s, maxScore, i)),
   ]
 

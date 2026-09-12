@@ -50,7 +50,7 @@ const byText = new Map()
  * @param {string} [opts.usedFor] 同じ音声を使う場面の説明
  */
 function add(id, text, group, opts = {}) {
-  const { target = '', scope = 'test', note = '', usedFor = '' } = opts
+  const { target = '', scope = 'test', note, usedFor = '' } = opts
   const existing = byText.get(text)
   if (existing) {
     // すでに同じ文章がある。ファイルは増やさず、使う場面だけ足す
@@ -58,7 +58,7 @@ function add(id, text, group, opts = {}) {
     if (scope === 'test') existing.scope = 'test'
     return existing
   }
-  const row = { id, file: `${id}.mp3`, text, group, target, scope, note, usedFor: usedFor ? [usedFor] : [] }
+  const row = { id, file: `${id}.mp3`, text, group, target, scope, note: note ?? '', usedFor: usedFor ? [usedFor] : [] }
   rows.push(row)
   byText.set(text, row)
   return row
@@ -127,39 +127,32 @@ for (const [id, text, note] of FLOW_MESSAGES) add(id, text, '進行', { note })
 // ---------------------------------------------------------------------------
 // 質問と、その言い直し
 // ---------------------------------------------------------------------------
-const questionIds = new Map()
-{
-  const counters = new Map()
-  const prefixOf = (question) => {
-    if (question.id.startsWith('test:')) return 'test'
-    if (question.id.startsWith('report:')) return 'report'
-    return question.id.split(':')[0]
-  }
-  for (const question of full.questions) {
-    const prefix = prefixOf(question)
-    const next = (counters.get(prefix) ?? 0) + 1
-    counters.set(prefix, next)
-    questionIds.set(
-      question.id,
-      prefix === 'test' || prefix === 'report'
-        ? `${prefix}-${String(next).padStart(2, '0')}`
-        : question.id.replace(':', '-'),
-    )
-  }
-}
-
-for (const question of full.questions) {
-  const id = questionIds.get(question.id)
-  const target = question.label ?? ''
-  const scope = testRunIds.has(question.id) ? 'test' : 'option'
-  add(`q-${id}`, question.prompt, `質問｜${question.section}`, { target, scope })
-  if (question.rePrompt) {
-    add(`q-${id}-again`, question.rePrompt, `質問｜${question.section}`, {
+/**
+ * ふだんの運用と、追加設定を全部入れたものの両方をたどる。
+ * 通知表のオン・オフで言い方が変わる質問があるため、片方だけでは足りない。
+ * 同じ文章のものは add() の側でまとめられる。
+ */
+for (const [scenario, scope] of [
+  [testRun, 'test'],
+  [full, 'option'],
+]) {
+  for (const question of scenario.questions) {
+    const target = question.label ?? ''
+    // 音声のファイル名はシナリオが持っている。無ければ ID から作る
+    const id = question.audio ?? `q-${question.id.replace(':', '-')}`
+    add(id, question.prompt, `質問｜${question.section}`, {
       target,
       scope,
-      note: '聞き取れなかったときの言い直し',
-      usedFor: `${target}の言い直し`,
+      note: scenario === full && !testRunIds.has(question.id) ? '' : undefined,
     })
+    if (question.rePrompt) {
+      add(question.audioAgain ?? `${id}-again`, question.rePrompt, `質問｜${question.section}`, {
+        target,
+        scope,
+        note: '聞き取れなかったときの言い直し',
+        usedFor: `${target}の言い直し`,
+      })
+    }
   }
 }
 

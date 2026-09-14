@@ -18,7 +18,7 @@ interface ServerResponse {
 
 export function createApiReplySource(): ReplySource {
   return {
-    async respond(history: ChatTurn[], signal?: AbortSignal): Promise<ReplyResult> {
+    async respond(history: ChatTurn[], { signal, filler } = {}): Promise<ReplyResult> {
       let response: Response
       try {
         response = await fetch(ENDPOINT, {
@@ -26,6 +26,8 @@ export function createApiReplySource(): ReplySource {
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             turns: history.map((turn) => ({ who: turn.who, text: turn.text })),
+            // すでに声に出した前置き。続きだけを書かせる
+            filler: filler ?? null,
           }),
           signal,
         })

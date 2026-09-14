@@ -3,6 +3,7 @@
  *
  *   npm run gen:chat-audio
  *   npm run gen:chat-audio -- --check          作らずに、そろっているかだけ見る
+ *   npm run gen:chat-audio -- --name ゆうと    名前入りのつなぎ言葉も作る
  *   npm run gen:chat-audio -- --speaker まお --style おちつき --speed 1.05
  *
  * **AivisSpeech アプリを起動してから実行すること。** ローカルのエンジンに作らせる。
@@ -19,10 +20,29 @@
  */
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { registerHooks } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+
+/**
+ * Node は `import './fillers'` のような拡張子なしの書き方を解決できない
+ * （まとめ役の Vite はできる）。アプリ側の書き方を変えずに読めるよう、
+ * 見つからなければ `.ts` を補う。
+ */
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    if (/^\.\.?\//.test(specifier) && !/\.[a-z]+$/i.test(specifier)) {
+      try {
+        return nextResolve(`${specifier}.ts`, context)
+      } catch {
+        // .ts でも無ければ、もとの指定のまま普通に解決させる
+      }
+    }
+    return nextResolve(specifier, context)
+  },
+})
 
 const { DEFAULT_ENGINE_URL, AivisEngineError, resolveStyleId, synthesize } = await import(
   path.join(root, 'server/aivis.ts')
@@ -98,6 +118,11 @@ const voice = {
 }
 
 const opening = values.opening ?? DEFAULT_CHAT_OPENING
+/**
+ * 名前入りのつなぎ言葉（「{名前}、よかったねー。」）を作るなら渡す。
+ * 渡さなければ作らない。アプリ側も、用意できていない言葉は使わない
+ */
+const studentName = values.name
 const outDir = path.resolve(root, values.out ?? 'public/audio/chat')
 const manifestPath = path.join(outDir, 'manifest.json')
 
@@ -109,7 +134,7 @@ const keepOld = flags.has('keep-old')
 // 何を作るか
 // ---------------------------------------------------------------------------
 
-const lines = fixedLines(opening)
+const lines = fixedLines({ opening, studentName })
 
 /** ファイル名。人が見て分かる名前 + 条件のハッシュ */
 function fileNameFor(line) {
@@ -145,6 +170,7 @@ console.log(
   `調整       : 速さ ${voice.speedScale} / 高さ ${voice.pitchScale} / 抑揚 ${voice.intonationScale} / 抑揚の動き ${voice.tempoDynamicsScale}`,
 )
 console.log(`置き場所   : ${path.relative(root, outDir)}`)
+console.log(`名前       : ${studentName ?? '（なし。名前入りのつなぎ言葉は作りません）'}`)
 console.log('')
 
 const planned = lines.map((line) => {
@@ -166,7 +192,7 @@ const planned = lines.map((line) => {
 if (checkOnly) {
   const missing = planned.filter((item) => !item.ready)
   for (const item of planned) {
-    console.log(`${item.ready ? '済' : '未'}  ${item.line.id.padEnd(14)} ${item.line.text}`)
+    console.log(`${item.ready ? '済' : '未'}  ${item.line.id.padEnd(20)} ${item.line.text}`)
   }
   console.log('')
   if (missing.length === 0) {
@@ -200,7 +226,7 @@ let skipped = 0
 // 1 本ずつ、順番に。まとめて投げるとエンジンを占有してしまう
 for (const item of planned) {
   if (item.ready && !force) {
-    console.log(`済  ${item.line.id.padEnd(14)} ${item.line.text}`)
+    console.log(`済  ${item.line.id.padEnd(20)} ${item.line.text}`)
     skipped += 1
     continue
   }
@@ -219,7 +245,7 @@ for (const item of planned) {
   item.ready = true
   made += 1
   console.log(
-    `新  ${item.line.id.padEnd(14)} ${item.line.text}  ` +
+    `新  ${item.line.id.padEnd(20)} ${item.line.text}  ` +
       `[${Date.now() - startedAt}ms ${(audio.byteLength / 1024).toFixed(0)}KB]`,
   )
 }

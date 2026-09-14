@@ -23,6 +23,8 @@ export function App() {
   const [sessions, setSessions] = useState<Session[]>(() => loadSessions())
   const [viewing, setViewing] = useState<Session | null>(null)
   const [studentName, setStudentName] = useState('')
+  /** 雑談で使う名前。聞き取りの進行には影響させないため、別に持つ */
+  const [chatStudentName, setChatStudentName] = useState('')
   /** マイクの使用許可。はじめるボタンを押したときに確かめる */
   const [micStatus, setMicStatus] = useState<MicStatus>('unsupported')
   /** 許可のダイアログを出している最中 */
@@ -88,7 +90,7 @@ export function App() {
    * 雑談を開く。聞き取りとは別の機能なので、進行も画面も共有しない。
    * マイクの許可だけは、ここでも押した直後に取っておく
    */
-  const openChat = useCallback(async () => {
+  const openChat = useCallback(async (name: string) => {
     unlockSpeechSynthesis()
     unlockAudio()
     // Safari はタップから時間がたってからの再生を止めるため、ここで用意しておく
@@ -96,6 +98,8 @@ export function App() {
     setPreparingMic(true)
     setMicStatus(await requestMicrophone())
     setPreparingMic(false)
+    // 名前は、つなぎ言葉の「{名前}」に差し込むのに使う（入っていなければ使わない）
+    setChatStudentName(name)
     setScreen('chat')
   }, [])
 
@@ -123,7 +127,7 @@ export function App() {
           onStart={(name) => void begin(name)}
           onOpenSettings={() => setScreen('settings')}
           onOpenHistory={() => setScreen('history')}
-          onOpenChat={settings.chatEnabled ? () => void openChat() : undefined}
+          onOpenChat={settings.chatEnabled ? (name) => void openChat(name) : undefined}
         />
       )}
 
@@ -154,6 +158,7 @@ export function App() {
           avatarId={settings.avatarId}
           micStatus={micStatus}
           settings={settings}
+          studentName={chatStudentName}
           onClose={() => setScreen('start')}
         />
       )}

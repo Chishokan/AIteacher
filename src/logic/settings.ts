@@ -34,6 +34,8 @@ export interface Settings {
   chatOpening: string
   /** 返事をサーバー（Claude）に作ってもらう。切るとダミーの固定文で動作だけ試せる */
   chatUseApi: boolean
+  /** つなぎ言葉で沈黙を埋める。切ると返事ができるまで黙る */
+  chatFillerEnabled: boolean
   /** 返事の声。PC で動かしている AivisSpeech を使うか、ブラウザの読み上げか */
   chatVoiceMode: 'aivis' | 'browser'
   /** AivisSpeech の声（例: まお） */
@@ -70,6 +72,7 @@ export const defaultSettings: Settings = {
   // 事前生成のスクリプトが Node から同じ値を読めるようにするため
   chatOpening: DEFAULT_CHAT_OPENING,
   chatUseApi: true,
+  chatFillerEnabled: true,
   chatVoiceMode: 'aivis',
   chatVoiceSpeaker: DEFAULT_CHAT_VOICE.speaker,
   chatVoiceStyle: DEFAULT_CHAT_VOICE.style,

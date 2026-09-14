@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Avatar } from './Avatar'
 import { useChatTurn } from '../chat/useChatTurn'
 import { createApiReplySource } from '../chat/apiReplySource'
@@ -8,11 +8,15 @@ import type { Settings } from '../logic/settings'
 import type { AvatarMood } from '../types'
 import type { ChatPhase } from '../chat/types'
 import { MIC_MESSAGES, type MicStatus } from '../speech/mic'
+import { allFillerLines } from '../chat/fillers'
+import { readyTexts } from '../chat/prebuiltClips'
 
 interface ChatScreenProps {
   avatarId: string
   micStatus: MicStatus
   settings: Settings
+  /** 最初の画面で入れた名前。つなぎ言葉の「{名前}」に使う */
+  studentName?: string
   onClose: () => void
 }
 
@@ -37,7 +41,13 @@ const MIC_LABEL: Record<ChatPhase, string> = {
   speaking: '話しています…',
 }
 
-export function ChatScreen({ avatarId, micStatus, settings, onClose }: ChatScreenProps) {
+export function ChatScreen({
+  avatarId,
+  micStatus,
+  settings,
+  studentName,
+  onClose,
+}: ChatScreenProps) {
   const replySource = useMemo(
     () => (settings.chatUseApi ? createApiReplySource() : createDummyReplySource()),
     [settings.chatUseApi],
@@ -69,11 +79,61 @@ export function ChatScreen({ avatarId, micStatus, settings, onClose }: ChatScree
     settings.chatTempoDynamicsScale,
   ])
 
+  /**
+   * つなぎ言葉のうち、いま鳴らせるもの。
+   *
+   * その場で作ると逆に遅くなるので、**先に作ってあるものしか使わない**
+   * （引き継ぎ仕様 3.2 の 6）。ただしブラウザの読み上げは待ち時間がないので、
+   * そのときは全部使ってよい。
+   */
+  const [readyFillers, setReadyFillers] = useState<Set<string> | null>(null)
+  const usingBrowserVoice = settings.chatVoiceMode === 'browser'
+
+  useEffect(() => {
+    if (usingBrowserVoice) {
+      setReadyFillers(null)
+      return
+    }
+    let active = true
+    const texts = allFillerLines(studentName).map((line) => line.text)
+    void readyTexts(texts, {
+      speaker: settings.chatVoiceSpeaker,
+      style: settings.chatVoiceStyle,
+      speedScale: settings.chatSpeedScale,
+      pitchScale: settings.chatPitchScale,
+      intonationScale: settings.chatIntonationScale,
+      tempoDynamicsScale: settings.chatTempoDynamicsScale,
+    }).then((ready) => {
+      if (active) setReadyFillers(ready)
+    })
+    return () => {
+      active = false
+    }
+  }, [
+    studentName,
+    usingBrowserVoice,
+    settings.chatVoiceSpeaker,
+    settings.chatVoiceStyle,
+    settings.chatSpeedScale,
+    settings.chatPitchScale,
+    settings.chatIntonationScale,
+    settings.chatTempoDynamicsScale,
+  ])
+
+  const isFillerReady = useMemo(() => {
+    if (usingBrowserVoice) return () => true
+    const ready = readyFillers
+    return (text: string) => ready?.has(text) ?? false
+  }, [readyFillers, usingBrowserVoice])
+
   const { state, actions } = useChatTurn({
     opening: settings.chatOpening,
     replySource,
     voice,
     fallbackVoice: browserVoice,
+    fillerEnabled: settings.chatFillerEnabled,
+    isFillerReady,
+    studentName,
   })
 
   useEffect(() => {
@@ -157,7 +217,11 @@ export function ChatScreen({ avatarId, micStatus, settings, onClose }: ChatScree
               <dt>つなぎ</dt>
               <dd>
                 {state.metrics.fillerCount} 回
-                {state.metrics.fillerSkipReason ? `（${state.metrics.fillerSkipReason}）` : ''}
+                {state.metrics.fillerSkipReason
+                  ? `（${state.metrics.fillerSkipReason}）`
+                  : state.metrics.fillerScene
+                    ? `（${state.metrics.fillerScene}）`
+                    : ''}
               </dd>
             </div>
             <div>

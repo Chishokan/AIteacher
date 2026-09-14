@@ -14,8 +14,17 @@ export type ReplyResult =
   /** 会話を止めるエラー（キーの誤りなど） */
   | { status: 'fatal'; message: string }
 
+export interface RespondOptions {
+  signal?: AbortSignal
+  /**
+   * すでに声に出したつなぎ言葉。
+   * 渡すと「その続きだけを書いて」と伝わり、二重の相槌にならない（引き継ぎ仕様 3.2 の 4）
+   */
+  filler?: string | null
+}
+
 export interface ReplySource {
-  respond(history: ChatTurn[], signal?: AbortSignal): Promise<ReplyResult>
+  respond(history: ChatTurn[], options?: RespondOptions): Promise<ReplyResult>
 }
 
 const DUMMY_REPLIES = [
@@ -30,7 +39,7 @@ const DUMMY_REPLIES = [
 export function createDummyReplySource(delayMs = 600): ReplySource {
   let count = 0
   return {
-    async respond(_history, signal) {
+    async respond(_history, { signal } = {}) {
       await new Promise<void>((resolve) => {
         const timer = setTimeout(done, delayMs)
         function done() {

@@ -6,6 +6,13 @@ import { startPushToTalk, type PushToTalkHandle } from './pushToTalk'
 import { emptyMetrics, type ChatPhase, type ChatTurn, type TurnMetrics } from './types'
 import { RETRY_NOTICE } from './fixedLines'
 import type { ReplySource } from './reply'
+import {
+  chooseFiller,
+  chooseThinkingFiller,
+  detectScene,
+  rememberFiller,
+  type FillerPick,
+} from './fillers'
 
 export interface ChatState {
   phase: ChatPhase
@@ -43,6 +50,19 @@ export interface UseChatTurnOptions {
   voice: Voice
   /** voice が使えなかったときの受け皿（ブラウザの読み上げ） */
   fallbackVoice?: Voice
+  /** つなぎ言葉を使うか。切ると計測欄に「オフ」と出る */
+  fillerEnabled?: boolean
+  /** その文言の音声が用意できているか。用意できたものしかつなぎ言葉に使わない */
+  isFillerReady?: (text: string) => boolean
+  /** 生徒の名前。無ければ「{名前}」入りのつなぎ言葉は使わない */
+  studentName?: string
+}
+
+/** つなぎ言葉を言い終えても返事ができていないとき、2 段目までこれだけ待つ */
+const SECOND_FILLER_WAIT_MS = 400
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 /**
@@ -53,13 +73,25 @@ export interface UseChatTurnOptions {
  * - アバターが話している間は押せない（自分の声を拾わないため）
  * - 聞き取れなかったときは話さず、押し直してもらう案内だけ出す
  */
-export function useChatTurn({ opening, replySource, voice, fallbackVoice }: UseChatTurnOptions) {
+export function useChatTurn({
+  opening,
+  replySource,
+  voice,
+  fallbackVoice,
+  fillerEnabled = true,
+  isFillerReady,
+  studentName,
+}: UseChatTurnOptions) {
   const [state, setState] = useState<ChatState>(INITIAL)
 
   const listeningRef = useRef<PushToTalkHandle | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const turnsRef = useRef<ChatTurn[]>([])
   const busyRef = useRef(false)
+  /** 直近に使ったつなぎ言葉。同じものが続かないように覚えておく */
+  const recentFillersRef = useRef<string[]>([])
+  /** 名前入りのつなぎ言葉を前に使ってから何ターンたったか */
+  const turnsSinceNameRef = useRef(Number.POSITIVE_INFINITY)
 
   const patch = useCallback((next: Partial<ChatState>) => {
     setState((prev) => ({ ...prev, ...next }))
@@ -106,7 +138,16 @@ export function useChatTurn({ opening, replySource, voice, fallbackVoice }: UseC
     busyRef.current = false
   }, [opening, patch, pushTurn, say])
 
-  /** 生徒の発話を受けて、返事をする */
+  /**
+   * 生徒の発話を受けて、返事をする。
+   *
+   * 沈黙を作らないために、順番がふつうと違う（引き継ぎ仕様 3.2）。
+   *  1. 場面を判定して、つなぎ言葉を選ぶ（AI は使わない。一瞬で決まる）
+   *  2. 返事づくりを**先に走らせる**（待たない）
+   *  3. その裏でつなぎ言葉を鳴らす → 生徒が話し終えた直後に声が出る
+   *  4. 言い終えても返事が来ていなければ、400ms 待って「考え中」で 2 段目
+   *  5. 返事が来たら鳴らす
+   */
   const handleTranscript = useCallback(
     async (transcript: string) => {
       const studentDoneAt = Date.now()
@@ -116,28 +157,101 @@ export function useChatTurn({ opening, replySource, voice, fallbackVoice }: UseC
       const abort = new AbortController()
       abortRef.current = abort
 
+      // --- 1. つなぎ言葉を選ぶ ---------------------------------------------
+      const pick: FillerPick = fillerEnabled
+        ? chooseFiller(transcript, {
+            isReady: isFillerReady ?? (() => false),
+            studentName,
+            recent: recentFillersRef.current,
+            turnsSinceName: turnsSinceNameRef.current,
+            random: Math.random,
+          })
+        : { text: null, scene: detectScene(transcript), skipReason: 'オフ', usedName: false }
+
+      const metrics: TurnMetrics = {
+        ...emptyMetrics(),
+        fillerScene: pick.scene,
+        fillerSkipReason: pick.skipReason,
+      }
+
+      // --- 2. 返事づくりを先に走らせる（待たない）--------------------------
       const thinkStart = Date.now()
-      const reply = await replySource.respond(turnsRef.current, abort.signal)
-      const thinkMs = Date.now() - thinkStart
+      let replyDone = false
+      // 返事づくりにかかった時間。つなぎ言葉を鳴らしている間も進むので、
+      // あとから測ると鳴らした時間まで混ざる。返ってきた時点で止める
+      let thinkMs: number | null = null
+      const replyPromise = replySource
+        .respond(turnsRef.current, { signal: abort.signal, filler: pick.text })
+        .finally(() => {
+          replyDone = true
+          thinkMs = Date.now() - thinkStart
+        })
+
+      // --- 3. つなぎ言葉を鳴らす -------------------------------------------
+      /** 最後のつなぎ言葉を言い終えた時刻。途中の沈黙を測るのに使う */
+      let fillerDoneAt: number | null = null
+      if (pick.text) {
+        recentFillersRef.current = rememberFiller(recentFillersRef.current, pick.text)
+        turnsSinceNameRef.current = pick.usedName ? 0 : turnsSinceNameRef.current + 1
+        metrics.fillerCount += 1
+
+        await say(pick.text, () => {
+          metrics.firstVoiceMs = Date.now() - studentDoneAt
+          patch({ metrics: { ...metrics } })
+        })
+        fillerDoneAt = Date.now()
+
+        // --- 4. まだ返事が来ていなければ、少し待って「考え中」で 2 段目 ----
+        if (!replyDone && !abort.signal.aborted) {
+          await sleep(SECOND_FILLER_WAIT_MS)
+          if (!replyDone && !abort.signal.aborted) {
+            const waiting = chooseThinkingFiller(
+              isFillerReady ?? (() => false),
+              recentFillersRef.current,
+              Math.random,
+            )
+            if (waiting) {
+              recentFillersRef.current = rememberFiller(recentFillersRef.current, waiting)
+              metrics.fillerCount += 1
+              patch({ metrics: { ...metrics } })
+              await say(waiting)
+              fillerDoneAt = Date.now()
+            }
+          }
+        }
+      } else {
+        turnsSinceNameRef.current += 1
+      }
+
+      // --- 5. 返事を待って鳴らす -------------------------------------------
+      const reply = await replyPromise
+      metrics.thinkMs = thinkMs
 
       if (abort.signal.aborted) return
 
       if (reply.status === 'fatal') {
-        patch({ phase: 'idle', fatal: reply.message })
+        patch({ phase: 'idle', fatal: reply.message, metrics: { ...metrics } })
         return
       }
       if (reply.status === 'retryable') {
         // 返事できなかった発言は履歴から外し、「あなたの番」に戻す
         turnsRef.current = turnsRef.current.filter((t) => t.at !== studentDoneAt)
-        patch({ phase: 'idle', turns: turnsRef.current, notice: reply.message })
+        patch({
+          phase: 'idle',
+          turns: turnsRef.current,
+          notice: reply.message,
+          metrics: { ...metrics },
+        })
         return
       }
 
-      const metrics: TurnMetrics = { ...emptyMetrics(), thinkMs }
       pushTurn({ who: 'ai', text: reply.text, at: Date.now() })
 
       const spoken = await say(reply.text, () => {
-        metrics.firstVoiceMs = Date.now() - studentDoneAt
+        const now = Date.now()
+        metrics.firstVoiceMs ??= now - studentDoneAt
+        // つなぎ言葉を言い終えてから、返事が始まるまでの沈黙
+        if (fillerDoneAt !== null) metrics.gapMs = now - fillerDoneAt
         patch({ metrics: { ...metrics } })
       })
       metrics.ttsMs = spoken.ttsMs
@@ -145,7 +259,7 @@ export function useChatTurn({ opening, replySource, voice, fallbackVoice }: UseC
 
       patch({ phase: 'idle', metrics: { ...metrics } })
     },
-    [patch, pushTurn, replySource, say],
+    [fillerEnabled, isFillerReady, patch, pushTurn, replySource, say, studentName],
   )
 
   /** マイクのボタン。押すたびに「開く」と「送る」が入れ替わる */

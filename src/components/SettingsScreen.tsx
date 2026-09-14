@@ -70,6 +70,21 @@ export function SettingsScreen({ settings, onChange, onClose }: SettingsScreenPr
               </span>
             </label>
 
+            <label className="toggle" style={{ marginTop: 10 }}>
+              <input
+                type="checkbox"
+                checked={settings.chatFillerEnabled}
+                onChange={(event) => patch({ chatFillerEnabled: event.target.checked })}
+              />
+              <span>
+                <strong>つなぎ言葉で沈黙を埋める</strong>
+                <span className="toggle__note">
+                  「うんうん、なるほどねー。」などを先に言い、その裏で返事を作ります。
+                  先に音声を作っておく必要があります（npm run gen:chat-audio）
+                </span>
+              </span>
+            </label>
+
             <label className="field" style={{ marginTop: 14 }}>
               <span>最初のひとこと</span>
               <input

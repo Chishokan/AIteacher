@@ -134,6 +134,24 @@ export function forgetPrebuiltManifest(): void {
 }
 
 /**
+ * 渡した文言のうち、事前生成が用意できているものを返す。
+ *
+ * つなぎ言葉は「用意できているものしか使わない」決まり（引き継ぎ仕様 3.2 の 6）。
+ * 選ぶたびに待てないので、雑談を開いたときに一度だけ引いて持っておく。
+ */
+export async function readyTexts(
+  texts: string[],
+  voice: PrebuiltVoice,
+): Promise<Set<string>> {
+  const manifest = await loadPrebuiltManifest()
+  const ready = new Set<string>()
+  for (const text of texts) {
+    if (findPrebuiltClip(manifest, text, voice)) ready.add(text)
+  }
+  return ready
+}
+
+/**
  * 事前生成があれば、その音声データを返す。無ければ null。
  * null が返ったら、呼ぶ側はその場で合成する。
  */

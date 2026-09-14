@@ -14,8 +14,8 @@ interface StartScreenProps {
   onStart: (studentName: string) => void
   onOpenSettings: () => void
   onOpenHistory: () => void
-  /** 雑談メニュー。設定で切っているときは渡されない */
-  onOpenChat?: () => void
+  /** 雑談メニュー。設定で切っているときは渡されない。名前はつなぎ言葉に使う */
+  onOpenChat?: (studentName: string) => void
 }
 
 export function StartScreen({
@@ -122,7 +122,12 @@ export function StartScreen({
         )}
 
         {onOpenChat && (
-          <button type="button" className="btn btn--block" disabled={preparingMic} onClick={onOpenChat}>
+          <button
+            type="button"
+            className="btn btn--block"
+            disabled={preparingMic}
+            onClick={() => onOpenChat(name)}
+          >
             💬 雑談してみる（おためし）
           </button>
         )}

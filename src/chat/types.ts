@@ -10,6 +10,8 @@ export type ChatPhase =
   | 'thinking'
   /** アバターが話している */
   | 'speaking'
+  /** 1 セットが終わった。押し直すか、終わるかを待つ */
+  | 'finished'
 
 export interface ChatTurn {
   who: 'student' | 'ai'

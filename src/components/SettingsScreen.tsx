@@ -86,6 +86,27 @@ export function SettingsScreen({ settings, onChange, onClose }: SettingsScreenPr
             </label>
 
             <label className="field" style={{ marginTop: 14 }}>
+              <span>1 セットのやりとり（回）</span>
+              <input
+                className="input"
+                type="number"
+                min={1}
+                max={20}
+                value={settings.chatTurnsPerSet}
+                onChange={(event) => {
+                  const value = Number(event.target.value)
+                  if (Number.isFinite(value)) {
+                    patch({ chatTurnsPerSet: Math.min(20, Math.max(1, Math.round(value))) })
+                  }
+                }}
+              />
+              <span className="field__note">
+                この回数を話すと、アバターが話をまとめて「またね」で締めます。
+                そのあとは「もう少し話す」を押すと続けられます
+              </span>
+            </label>
+
+            <label className="field" style={{ marginTop: 14 }}>
               <span>最初のひとこと</span>
               <input
                 className="input"

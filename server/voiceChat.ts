@@ -24,6 +24,8 @@ export interface VoiceChatRequest {
   filler?: string | null
   /** 生徒の発言の場面（つなぎ言葉の判定と同じもの）。「質問」なら、まず答えさせる */
   scene?: string | null
+  /** このやりとりで 1 セットを締めくくるか。何回で 1 セットかはブラウザ側が決める */
+  closing?: boolean
   /** アバターのキャラクター設定。省略すると既定のキャラクターになる */
   persona?: ChatPersona
 }
@@ -53,6 +55,7 @@ function parseRequest(body: unknown): VoiceChatRequest | null {
     turns: raw.turns as VoiceChatTurn[],
     filler,
     scene,
+    closing: raw.closing === true,
     persona: toPersona(raw.persona),
   }
 }
@@ -74,6 +77,7 @@ export function buildMessages(request: VoiceChatRequest): Anthropic.MessageParam
   const style = chooseReplyStyle({
     aiTurns: request.turns.filter((turn) => turn.who === 'ai').length,
     scene: request.scene,
+    closing: request.closing,
   })
 
   // このターンの注意は、最後の生徒の発言に足す

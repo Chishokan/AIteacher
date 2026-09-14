@@ -53,4 +53,19 @@ describe('chooseReplyStyle', () => {
   it('会話が始まる前でも落ちない', () => {
     expect(chooseReplyStyle({ aiTurns: 0 })).toBe('question')
   })
+
+  it('セットの最後は、締めにまわす', () => {
+    expect(chooseReplyStyle({ aiTurns: 5, closing: true })).toBe('closing')
+  })
+
+  it('締めは、聞かれた回よりも優先する（締めの中で答えさせる）', () => {
+    expect(chooseReplyStyle({ aiTurns: 5, scene: '質問', closing: true })).toBe('closing')
+  })
+
+  it('5 回 1 セットだと、質問・自分の話・締めが一通り出る', () => {
+    const styles = [1, 2, 3, 4, 5].map((aiTurns) =>
+      chooseReplyStyle({ aiTurns, closing: aiTurns === 5 }),
+    )
+    expect(styles).toEqual(['question', 'question', 'self', 'question', 'closing'])
+  })
 })

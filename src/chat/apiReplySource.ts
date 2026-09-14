@@ -18,7 +18,7 @@ interface ServerResponse {
 
 export function createApiReplySource(): ReplySource {
   return {
-    async respond(history: ChatTurn[], { signal, filler, scene } = {}): Promise<ReplyResult> {
+    async respond(history: ChatTurn[], { signal, filler, scene, closing } = {}): Promise<ReplyResult> {
       let response: Response
       try {
         response = await fetch(ENDPOINT, {
@@ -30,6 +30,8 @@ export function createApiReplySource(): ReplySource {
             filler: filler ?? null,
             // 「質問」ならサーバー側で「まず答える」返し方になる
             scene: scene ?? null,
+            // 1 セットの最後。話を広げずに締めさせる
+            closing: closing ?? false,
           }),
           signal,
         })

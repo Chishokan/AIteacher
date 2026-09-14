@@ -36,6 +36,8 @@ export interface Settings {
   chatUseApi: boolean
   /** つなぎ言葉で沈黙を埋める。切ると返事ができるまで黙る */
   chatFillerEnabled: boolean
+  /** 何回のやりとりで 1 セットにするか。話し終えるとアバターが締める */
+  chatTurnsPerSet: number
   /** 返事の声。PC で動かしている AivisSpeech を使うか、ブラウザの読み上げか */
   chatVoiceMode: 'aivis' | 'browser'
   /** AivisSpeech の声（例: まお） */
@@ -73,6 +75,7 @@ export const defaultSettings: Settings = {
   chatOpening: DEFAULT_CHAT_OPENING,
   chatUseApi: true,
   chatFillerEnabled: true,
+  chatTurnsPerSet: 5,
   chatVoiceMode: 'aivis',
   chatVoiceSpeaker: DEFAULT_CHAT_VOICE.speaker,
   chatVoiceStyle: DEFAULT_CHAT_VOICE.style,

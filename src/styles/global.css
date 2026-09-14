@@ -443,6 +443,30 @@ p { margin: 0; line-height: 1.7; }
 
 .chat__controls { display: flex; flex-direction: column; gap: 12px; }
 
+/* 1 セットぶん話し終えたところ。押し直すか、終わるかを選んでもらう */
+.chat__finished {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+  border-radius: 24px;
+  background: var(--panel-soft, rgb(255 255 255 / 0.5));
+  text-align: center;
+}
+
+.chat__finished-note { margin: 0; font-size: 17px; font-weight: 700; }
+
+.chat__finished-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  width: 100%;
+}
+
+.chat__finished-buttons .btn { min-height: 60px; font-size: 18px; flex: 1 1 160px; }
+
 /* 押して話すボタン。自動では開かないので、ここが唯一の入口 */
 .mic-button {
   width: 100%;
@@ -542,6 +566,9 @@ p { margin: 0; line-height: 1.7; }
 .toggle > span { display: flex; flex-direction: column; gap: 3px; }
 .toggle strong { font-size: 17px; font-weight: 800; }
 .toggle__note { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
+
+/* 入力欄の下に添える説明。見出し（.field > span）より小さく、太字にしない */
+.field__note { font-size: 14px; color: var(--text-dim); line-height: 1.6; font-weight: 400; }
 
 /* ---------- 聞き取った答えの確認 ---------- */
 

@@ -67,6 +67,14 @@ describe('buildMessages', () => {
     expect(last).not.toContain('短い相槌をひとこと入れてから')
   })
 
+  it('セットの最後だと伝えられたら、締めの指示にする', () => {
+    const messages = buildMessages({
+      turns: [ai('こんにちは。'), student('部活だったよ')],
+      closing: true,
+    })
+    expect(String(messages[messages.length - 1]?.content)).toContain('いったん会話を終わります')
+  })
+
   it('生徒とアバターが交互に並ぶ', () => {
     const messages = buildMessages({
       turns: [ai('こんにちは。'), student('部活'), ai('へえ、どうだった？'), student('勝った')],

@@ -51,6 +51,14 @@ describe('turnInstruction', () => {
     expect(turnInstruction(null, 'answer')).toContain('その質問に自分の言葉で素直に答えて')
   })
 
+  it('締めの回は、話を広げずに終える', () => {
+    const note = turnInstruction(null, 'closing')
+    expect(note).toContain('いったん会話を終わります')
+    expect(note).toContain('新しい質問はしないでください')
+    // 聞かれたまま終わらないようにする
+    expect(note).toContain('聞かれていたら')
+  })
+
   it('自分の話と受けとめるだけの回は、質問を止める', () => {
     expect(turnInstruction(null, 'self')).toContain('質問をしないでください')
     expect(turnInstruction(null, 'echo')).toContain('質問をしないでください')

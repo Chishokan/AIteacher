@@ -25,6 +25,7 @@ const MOOD: Record<ChatPhase, AvatarMood> = {
   recording: 'listening',
   thinking: 'thinking',
   speaking: 'speaking',
+  finished: 'happy',
 }
 
 const STATUS: Record<ChatPhase, string> = {
@@ -32,6 +33,7 @@ const STATUS: Record<ChatPhase, string> = {
   recording: '聞いています',
   thinking: '考えています',
   speaking: '話しています',
+  finished: 'おしまい',
 }
 
 const MIC_LABEL: Record<ChatPhase, string> = {
@@ -39,6 +41,7 @@ const MIC_LABEL: Record<ChatPhase, string> = {
   recording: '⏹ 話し終わったら押す',
   thinking: '考えています…',
   speaking: '話しています…',
+  finished: 'おしまい',
 }
 
 export function ChatScreen({
@@ -134,6 +137,7 @@ export function ChatScreen({
     fillerEnabled: settings.chatFillerEnabled,
     isFillerReady,
     studentName,
+    turnsPerSet: settings.chatTurnsPerSet,
   })
 
   useEffect(() => {
@@ -151,6 +155,8 @@ export function ChatScreen({
   const micWarning = micStatus !== 'granted' && micStatus !== 'unsupported'
   // アバターが話している間は押せない（自分の声を拾わないため）
   const micDisabled = state.phase === 'speaking' || state.phase === 'thinking' || !!state.fatal
+  // 1 セットぶん話し終えたところ。押し直すか、終わるかを選んでもらう
+  const finished = state.phase === 'finished'
 
   return (
     <div className="chat">
@@ -198,14 +204,28 @@ export function ChatScreen({
         {state.fatal && <p className="banner banner--danger">{state.fatal}</p>}
         {state.notice && !micWarning && <p className="banner banner--warn">{state.notice}</p>}
 
-        <button
-          type="button"
-          className={`mic-button${state.phase === 'recording' ? ' mic-button--recording' : ''}`}
-          disabled={micDisabled}
-          onClick={actions.pressMic}
-        >
-          {MIC_LABEL[state.phase]}
-        </button>
+        {finished ? (
+          <div className="chat__finished">
+            <p className="chat__finished-note">ここまでで、いったんおしまいです。</p>
+            <div className="chat__finished-buttons">
+              <button type="button" className="btn btn--primary" onClick={actions.resume}>
+                💬 もう少し話す
+              </button>
+              <button type="button" className="btn" onClick={onClose}>
+                終わる
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className={`mic-button${state.phase === 'recording' ? ' mic-button--recording' : ''}`}
+            disabled={micDisabled}
+            onClick={actions.pressMic}
+          >
+            {MIC_LABEL[state.phase]}
+          </button>
+        )}
 
         {state.metrics && (
           <dl className="metrics">

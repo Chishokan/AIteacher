@@ -18,6 +18,8 @@ export type ReplyStyle =
   | 'echo'
   /** 生徒から聞かれたので、まず答える */
   | 'answer'
+  /** このセットの最後。話を広げずに締める */
+  | 'closing'
 
 /**
  * 2 回目以降のくり返し。
@@ -33,9 +35,17 @@ export interface ReplyStyleInput {
   aiTurns: number
   /** 生徒の発言の場面。「質問」なら、まず答える */
   scene?: string | null
+  /**
+   * このやりとりでセットを締めくくるか。
+   * 何回で 1 セットにするかは、会話を進めているブラウザ側が決める
+   */
+  closing?: boolean
 }
 
-export function chooseReplyStyle({ aiTurns, scene }: ReplyStyleInput): ReplyStyle {
+export function chooseReplyStyle({ aiTurns, scene, closing }: ReplyStyleInput): ReplyStyle {
+  // セットの最後は、聞かれていても締めにまわす
+  // （聞かれたことには、締めの言葉の中で答えさせる）
+  if (closing) return 'closing'
   // 聞かれたことには答える。型のくり返しより優先する
   if (scene === '質問') return 'answer'
 

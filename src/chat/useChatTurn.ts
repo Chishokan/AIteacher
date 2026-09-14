@@ -56,6 +56,12 @@ export interface UseChatTurnOptions {
   isFillerReady?: (text: string) => boolean
   /** 生徒の名前。無ければ「{名前}」入りのつなぎ言葉は使わない */
   studentName?: string
+  /**
+   * 何回のやりとりで 1 セットにするか。
+   * この回数を話したら、アバターが話をまとめて「またね」で締め、
+   * 「もう少し話す」を押すまで進まない。0 以下にすると区切らない
+   */
+  turnsPerSet?: number
 }
 
 /** つなぎ言葉を言い終えても返事ができていないとき、2 段目までこれだけ待つ */
@@ -81,6 +87,7 @@ export function useChatTurn({
   fillerEnabled = true,
   isFillerReady,
   studentName,
+  turnsPerSet = 5,
 }: UseChatTurnOptions) {
   const [state, setState] = useState<ChatState>(INITIAL)
 
@@ -92,6 +99,8 @@ export function useChatTurn({
   const recentFillersRef = useRef<string[]>([])
   /** 名前入りのつなぎ言葉を前に使ってから何ターンたったか */
   const turnsSinceNameRef = useRef(Number.POSITIVE_INFINITY)
+  /** いまのセットで、生徒が何回話したか */
+  const setTurnsRef = useRef(0)
 
   const patch = useCallback((next: Partial<ChatState>) => {
     setState((prev) => ({ ...prev, ...next }))
@@ -131,6 +140,7 @@ export function useChatTurn({
     if (busyRef.current) return
     busyRef.current = true
     turnsRef.current = []
+    setTurnsRef.current = 0
     setState({ ...INITIAL })
     pushTurn({ who: 'ai', text: opening, at: Date.now() })
     await say(opening)
@@ -153,6 +163,10 @@ export function useChatTurn({
       const studentDoneAt = Date.now()
       pushTurn({ who: 'student', text: transcript, at: studentDoneAt })
       patch({ phase: 'thinking', interim: '', notice: '' })
+
+      // 決めた回数を話したら、この返事でいったん締める
+      setTurnsRef.current += 1
+      const closing = turnsPerSet > 0 && setTurnsRef.current >= turnsPerSet
 
       const abort = new AbortController()
       abortRef.current = abort
@@ -185,6 +199,7 @@ export function useChatTurn({
           signal: abort.signal,
           filler: pick.text,
           scene: pick.scene,
+          closing,
         })
         .finally(() => {
           replyDone = true
@@ -238,7 +253,9 @@ export function useChatTurn({
         return
       }
       if (reply.status === 'retryable') {
-        // 返事できなかった発言は履歴から外し、「あなたの番」に戻す
+        // 返事できなかった発言は履歴から外し、「あなたの番」に戻す。
+        // やりとりが成立していないので、セットの数も戻す
+        setTurnsRef.current = Math.max(0, setTurnsRef.current - 1)
         turnsRef.current = turnsRef.current.filter((t) => t.at !== studentDoneAt)
         patch({
           phase: 'idle',
@@ -261,15 +278,19 @@ export function useChatTurn({
       metrics.ttsMs = spoken.ttsMs
       metrics.ttsPrebuilt = spoken.prebuilt
 
-      patch({ phase: 'idle', metrics: { ...metrics } })
+      if (closing) setTurnsRef.current = 0
+      patch({ phase: closing ? 'finished' : 'idle', metrics: { ...metrics } })
     },
-    [fillerEnabled, isFillerReady, patch, pushTurn, replySource, say, studentName],
+    [fillerEnabled, isFillerReady, patch, pushTurn, replySource, say, studentName, turnsPerSet],
   )
 
   /** マイクのボタン。押すたびに「開く」と「送る」が入れ替わる */
   const pressMic = useCallback(() => {
-    // アバターが話している / 返事を作っている間は受け付けない
-    if (state.phase === 'speaking' || state.phase === 'thinking') return
+    // アバターが話している / 返事を作っている間は受け付けない。
+    // セットが終わったあとは「もう少し話す」を押してもらう
+    if (state.phase === 'speaking' || state.phase === 'thinking' || state.phase === 'finished') {
+      return
+    }
 
     if (state.phase === 'recording') {
       listeningRef.current?.stop()
@@ -295,6 +316,12 @@ export function useChatTurn({
     })
   }, [handleTranscript, patch, state.phase])
 
+  /** 「もう少し話す」。話した内容は覚えたまま、次のセットを始める */
+  const resume = useCallback(() => {
+    setTurnsRef.current = 0
+    patch({ phase: 'idle', notice: '', interim: '' })
+  }, [patch])
+
   /** 画面を離れるときに、鳴っているものを止める */
   const stop = useCallback(() => {
     abortRef.current?.abort()
@@ -304,9 +331,13 @@ export function useChatTurn({
     stopAllAudio()
     busyRef.current = false
     turnsRef.current = []
+    setTurnsRef.current = 0
     setState({ ...INITIAL })
   }, [])
 
-  const actions = useMemo(() => ({ begin, pressMic, stop }), [begin, pressMic, stop])
+  const actions = useMemo(
+    () => ({ begin, pressMic, resume, stop }),
+    [begin, pressMic, resume, stop],
+  )
   return { state, actions }
 }

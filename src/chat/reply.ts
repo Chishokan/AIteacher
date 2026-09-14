@@ -26,6 +26,11 @@ export interface RespondOptions {
    * 「質問」なら、サーバー側で「まず答える」返し方に切り替わる
    */
   scene?: string | null
+  /**
+   * このやりとりで 1 セットを締めくくるか。
+   * true だと、話を広げずに「またね」で終える返事になる
+   */
+  closing?: boolean
 }
 
 export interface ReplySource {

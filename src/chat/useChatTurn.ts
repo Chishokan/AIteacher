@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { cancelSpeech, speak } from '../speech/tts'
+import { cancelSpeech } from '../speech/tts'
+import { stopAllAudio } from './audioPlayer'
+import type { Voice } from './voice'
 import { startPushToTalk, type PushToTalkHandle } from './pushToTalk'
 import { emptyMetrics, type ChatPhase, type ChatTurn, type TurnMetrics } from './types'
 import type { ReplySource } from './reply'
@@ -30,9 +32,10 @@ export interface UseChatTurnOptions {
   /** アバターの最初のひとこと */
   opening: string
   replySource: ReplySource
-  rate?: number
-  pitch?: number
-  voiceURI?: string
+  /** 返事をしゃべるところ */
+  voice: Voice
+  /** voice が使えなかったときの受け皿（ブラウザの読み上げ） */
+  fallbackVoice?: Voice
 }
 
 /**
@@ -43,7 +46,7 @@ export interface UseChatTurnOptions {
  * - アバターが話している間は押せない（自分の声を拾わないため）
  * - 聞き取れなかったときは話さず、押し直してもらう案内だけ出す
  */
-export function useChatTurn({ opening, replySource, rate, pitch, voiceURI }: UseChatTurnOptions) {
+export function useChatTurn({ opening, replySource, voice, fallbackVoice }: UseChatTurnOptions) {
   const [state, setState] = useState<ChatState>(INITIAL)
 
   const listeningRef = useRef<PushToTalkHandle | null>(null)
@@ -55,16 +58,23 @@ export function useChatTurn({ opening, replySource, rate, pitch, voiceURI }: Use
     setState((prev) => ({ ...prev, ...next }))
   }, [])
 
+  /**
+   * しゃべらせる。用意した声が使えなければ、読み上げに落として続ける。
+   * @returns 音声を用意するのにかかった時間
+   */
   const say = useCallback(
-    async (text: string, onFirstVoice?: () => void) => {
+    async (text: string, onFirstVoice?: () => void): Promise<number> => {
       patch({ phase: 'speaking' })
-      try {
-        await speak(text, { rate, pitch, voiceURI, onStart: onFirstVoice })
-      } catch {
-        // 声が出せなくても、字幕は出ているので会話は続ける
-      }
+      const outcome = await voice.speak(text, { onFirstVoice })
+      if (outcome.status === 'ok') return outcome.ttsMs
+
+      // 声が出せなくても、字幕は出ているので会話は続ける
+      patch({ notice: `${outcome.message} いまはブラウザの読み上げで進めます。` })
+      if (!fallbackVoice) return 0
+      const fallback = await fallbackVoice.speak(text, { onFirstVoice })
+      return fallback.status === 'ok' ? fallback.ttsMs : 0
     },
-    [patch, pitch, rate, voiceURI],
+    [fallbackVoice, patch, voice],
   )
 
   const pushTurn = useCallback(
@@ -115,15 +125,13 @@ export function useChatTurn({ opening, replySource, rate, pitch, voiceURI }: Use
       }
 
       const metrics: TurnMetrics = { ...emptyMetrics(), thinkMs }
-      const speakRequestedAt = Date.now()
-      pushTurn({ who: 'ai', text: reply.text, at: speakRequestedAt })
+      pushTurn({ who: 'ai', text: reply.text, at: Date.now() })
 
-      await say(reply.text, () => {
-        const now = Date.now()
-        metrics.firstVoiceMs = now - studentDoneAt
-        metrics.ttsMs = now - speakRequestedAt
+      const ttsMs = await say(reply.text, () => {
+        metrics.firstVoiceMs = Date.now() - studentDoneAt
         patch({ metrics: { ...metrics } })
       })
+      metrics.ttsMs = ttsMs
 
       patch({ phase: 'idle', metrics: { ...metrics } })
     },
@@ -165,6 +173,7 @@ export function useChatTurn({ opening, replySource, rate, pitch, voiceURI }: Use
     listeningRef.current?.stop()
     listeningRef.current = null
     cancelSpeech()
+    stopAllAudio()
     busyRef.current = false
     turnsRef.current = []
     setState({ ...INITIAL })

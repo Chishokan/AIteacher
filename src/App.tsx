@@ -12,6 +12,7 @@ import type { Settings } from './logic/settings'
 import type { Session } from './types'
 import { unlockSpeechSynthesis } from './speech/tts'
 import { unlockAudio } from './speech/clips'
+import { unlockAudioContext } from './chat/audioPlayer'
 import { requestMicrophone, type MicStatus } from './speech/mic'
 
 type Screen = 'start' | 'interview' | 'result' | 'settings' | 'history' | 'chat'
@@ -90,6 +91,8 @@ export function App() {
   const openChat = useCallback(async () => {
     unlockSpeechSynthesis()
     unlockAudio()
+    // Safari はタップから時間がたってからの再生を止めるため、ここで用意しておく
+    unlockAudioContext()
     setPreparingMic(true)
     setMicStatus(await requestMicrophone())
     setPreparingMic(false)
@@ -150,11 +153,7 @@ export function App() {
         <ChatScreen
           avatarId={settings.avatarId}
           micStatus={micStatus}
-          opening={settings.chatOpening}
-          useApi={settings.chatUseApi}
-          rate={settings.rate}
-          pitch={settings.pitch}
-          voiceURI={settings.voiceURI}
+          settings={settings}
           onClose={() => setScreen('start')}
         />
       )}

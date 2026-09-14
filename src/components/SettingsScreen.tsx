@@ -1,4 +1,5 @@
 import { AvatarPicker } from './AvatarPicker'
+import { useAivisVoices } from '../chat/useAivisVoices'
 import { SubjectEditor } from './SubjectEditor'
 import { useJapaneseVoices } from '../hooks/useVoices'
 import { defaultSettings, type Settings } from '../logic/settings'
@@ -12,6 +13,7 @@ interface SettingsScreenProps {
 
 export function SettingsScreen({ settings, onChange, onClose }: SettingsScreenProps) {
   const voices = useJapaneseVoices()
+  const aivis = useAivisVoices()
   const patch = (next: Partial<Settings>) => onChange({ ...settings, ...next })
 
   const preview = () => {
@@ -76,6 +78,103 @@ export function SettingsScreen({ settings, onChange, onClose }: SettingsScreenPr
                 onChange={(event) => patch({ chatOpening: event.target.value })}
               />
             </label>
+
+            <div className="field" style={{ marginTop: 18 }}>
+              <span>返事の声</span>
+              <select
+                className="select"
+                value={settings.chatVoiceMode}
+                onChange={(event) =>
+                  patch({ chatVoiceMode: event.target.value === 'browser' ? 'browser' : 'aivis' })
+                }
+              >
+                <option value="aivis">AivisSpeech（このPCで動かす）</option>
+                <option value="browser">ブラウザの読み上げ</option>
+              </select>
+            </div>
+
+            {settings.chatVoiceMode === 'aivis' && (
+              <>
+                {aivis.problem && <p className="banner banner--warn">{aivis.problem}</p>}
+
+                <label className="field" style={{ marginTop: 12 }}>
+                  <span>声とスタイル</span>
+                  <select
+                    className="select"
+                    value={`${settings.chatVoiceSpeaker} / ${settings.chatVoiceStyle}`}
+                    disabled={aivis.voices.length === 0}
+                    onChange={(event) => {
+                      const picked = aivis.voices.find((v) => v.label === event.target.value)
+                      if (picked) patch({ chatVoiceSpeaker: picked.speaker, chatVoiceStyle: picked.style })
+                    }}
+                  >
+                    {aivis.voices.length === 0 ? (
+                      <option>{`${settings.chatVoiceSpeaker} / ${settings.chatVoiceStyle}`}</option>
+                    ) : (
+                      aivis.voices.map((choice) => (
+                        <option key={choice.label} value={choice.label}>
+                          {choice.label}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </label>
+
+                <label className="field">
+                  <span>話す速さ：{settings.chatSpeedScale.toFixed(2)}</span>
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={2}
+                    step={0.05}
+                    value={settings.chatSpeedScale}
+                    onChange={(event) => patch({ chatSpeedScale: Number(event.target.value) })}
+                  />
+                </label>
+
+                <label className="field">
+                  <span>声の高さ：{settings.chatPitchScale.toFixed(2)}</span>
+                  <input
+                    type="range"
+                    min={-0.15}
+                    max={0.15}
+                    step={0.01}
+                    value={settings.chatPitchScale}
+                    onChange={(event) => patch({ chatPitchScale: Number(event.target.value) })}
+                  />
+                  <span className="muted" style={{ fontSize: 13 }}>
+                    0 から動かすと音が荒れることがあります
+                  </span>
+                </label>
+
+                <label className="field">
+                  <span>抑揚の強さ：{settings.chatIntonationScale.toFixed(2)}</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={2}
+                    step={0.05}
+                    value={settings.chatIntonationScale}
+                    onChange={(event) => patch({ chatIntonationScale: Number(event.target.value) })}
+                  />
+                </label>
+
+                <label className="field">
+                  <span>抑揚の動き：{settings.chatTempoDynamicsScale.toFixed(2)}</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={2}
+                    step={0.05}
+                    value={settings.chatTempoDynamicsScale}
+                    onChange={(event) => patch({ chatTempoDynamicsScale: Number(event.target.value) })}
+                  />
+                  <span className="muted" style={{ fontSize: 13 }}>
+                    上げると早口で生っぽい抑揚になります
+                  </span>
+                </label>
+              </>
+            )}
           </>
         )}
       </div>

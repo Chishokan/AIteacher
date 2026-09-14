@@ -33,6 +33,20 @@ export interface Settings {
   chatOpening: string
   /** 返事をサーバー（Claude）に作ってもらう。切るとダミーの固定文で動作だけ試せる */
   chatUseApi: boolean
+  /** 返事の声。PC で動かしている AivisSpeech を使うか、ブラウザの読み上げか */
+  chatVoiceMode: 'aivis' | 'browser'
+  /** AivisSpeech の声（例: まお） */
+  chatVoiceSpeaker: string
+  /** そのスタイル（例: おちつき） */
+  chatVoiceStyle: string
+  /** 話す速さ */
+  chatSpeedScale: number
+  /** 声の高さ。0 から動かすと音が荒れることがある */
+  chatPitchScale: number
+  /** 抑揚の強さ（AivisSpeech では「感情表現の強さ」） */
+  chatIntonationScale: number
+  /** 抑揚の動き。上げると早口で生っぽくなる */
+  chatTempoDynamicsScale: number
 }
 
 export const defaultSettings: Settings = {
@@ -53,4 +67,11 @@ export const defaultSettings: Settings = {
   chatEnabled: true,
   chatOpening: 'こんにちは。今日はどんな一日だった？',
   chatUseApi: true,
+  chatVoiceMode: 'aivis',
+  chatVoiceSpeaker: 'まお',
+  chatVoiceStyle: 'おちつき',
+  chatSpeedScale: 1.0,
+  chatPitchScale: 0.0,
+  chatIntonationScale: 1.0,
+  chatTempoDynamicsScale: 1.0,
 }

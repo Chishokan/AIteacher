@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { chatApiPlugin } from './server/devApi'
+import { DEFAULT_ENGINE_URL } from './server/aivis'
 
 export default defineConfig(({ mode }) => {
   // 第3引数を空にすると、VITE_ で始まらないものも読める。
@@ -8,7 +9,14 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
-    plugins: [react(), chatApiPlugin(env.ANTHROPIC_API_KEY)],
+    plugins: [
+      react(),
+      chatApiPlugin({
+        apiKey: env.ANTHROPIC_API_KEY,
+        // PC で動かしている AivisSpeech。別のポートなら .env.local で変える
+        engineUrl: env.AIVIS_ENGINE_URL || DEFAULT_ENGINE_URL,
+      }),
+    ],
     base: './',
     server: {
       host: true, // 同一LAN上のタブレットから開けるようにする

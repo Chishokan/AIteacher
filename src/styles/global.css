@@ -374,6 +374,12 @@ p { margin: 0; line-height: 1.7; }
   color: #ffffff;
 }
 
+.appbar__badge--quiet {
+  background: var(--panel);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
 /* ---------- 雑談画面 ---------- */
 
 .chat {

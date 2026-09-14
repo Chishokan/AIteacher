@@ -3,6 +3,8 @@ import { Avatar } from './Avatar'
 import { useChatTurn } from '../chat/useChatTurn'
 import { createApiReplySource } from '../chat/apiReplySource'
 import { createDummyReplySource } from '../chat/reply'
+import { createAivisVoice, createBrowserVoice } from '../chat/voice'
+import type { Settings } from '../logic/settings'
 import type { AvatarMood } from '../types'
 import type { ChatPhase } from '../chat/types'
 import { MIC_MESSAGES, type MicStatus } from '../speech/mic'
@@ -10,12 +12,7 @@ import { MIC_MESSAGES, type MicStatus } from '../speech/mic'
 interface ChatScreenProps {
   avatarId: string
   micStatus: MicStatus
-  opening: string
-  rate: number
-  pitch: number
-  voiceURI?: string
-  /** 返事をサーバー（Claude）に作ってもらう。切るとダミーの固定文になる */
-  useApi: boolean
+  settings: Settings
   onClose: () => void
 }
 
@@ -40,25 +37,53 @@ const MIC_LABEL: Record<ChatPhase, string> = {
   speaking: '話しています…',
 }
 
-export function ChatScreen({
-  avatarId,
-  micStatus,
-  opening,
-  rate,
-  pitch,
-  voiceURI,
-  useApi,
-  onClose,
-}: ChatScreenProps) {
+export function ChatScreen({ avatarId, micStatus, settings, onClose }: ChatScreenProps) {
   const replySource = useMemo(
-    () => (useApi ? createApiReplySource() : createDummyReplySource()),
-    [useApi],
+    () => (settings.chatUseApi ? createApiReplySource() : createDummyReplySource()),
+    [settings.chatUseApi],
   )
-  const { state, actions } = useChatTurn({ opening, replySource, rate, pitch, voiceURI })
+
+  const browserVoice = useMemo(
+    () => createBrowserVoice(settings.rate, settings.pitch, settings.voiceURI),
+    [settings.pitch, settings.rate, settings.voiceURI],
+  )
+
+  const voice = useMemo(() => {
+    if (settings.chatVoiceMode === 'browser') return browserVoice
+    return createAivisVoice({
+      speaker: settings.chatVoiceSpeaker,
+      style: settings.chatVoiceStyle,
+      speedScale: settings.chatSpeedScale,
+      pitchScale: settings.chatPitchScale,
+      intonationScale: settings.chatIntonationScale,
+      tempoDynamicsScale: settings.chatTempoDynamicsScale,
+    })
+  }, [
+    browserVoice,
+    settings.chatVoiceMode,
+    settings.chatVoiceSpeaker,
+    settings.chatVoiceStyle,
+    settings.chatSpeedScale,
+    settings.chatPitchScale,
+    settings.chatIntonationScale,
+    settings.chatTempoDynamicsScale,
+  ])
+
+  const { state, actions } = useChatTurn({
+    opening: settings.chatOpening,
+    replySource,
+    voice,
+    fallbackVoice: browserVoice,
+  })
 
   useEffect(() => {
-    void actions.begin()
-    return actions.stop
+    // 開発モードでは効果が二度呼ばれる。すぐに始めず一拍おいて、
+    // 片付けで取り消すことで、最初のひとことを 2 回作らせない
+    const timer = setTimeout(() => void actions.begin(), 0)
+    return () => {
+      clearTimeout(timer)
+      actions.stop()
+    }
     // 画面を開いたときに一度だけ始める
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -71,7 +96,12 @@ export function ChatScreen({
     <div className="chat">
       <div className="appbar">
         <h1 className="appbar__title">雑談</h1>
-        <span className="appbar__badge">{useApi ? 'おためし' : 'ダミー返事'}</span>
+        <span className="appbar__badge">{settings.chatUseApi ? 'おためし' : 'ダミー返事'}</span>
+        <span className="appbar__badge appbar__badge--quiet">
+          {settings.chatVoiceMode === 'aivis'
+            ? `${settings.chatVoiceSpeaker} / ${settings.chatVoiceStyle}`
+            : 'ブラウザの読み上げ'}
+        </span>
         <span className="spacer" />
         <button type="button" className="btn" onClick={onClose}>
           終わる

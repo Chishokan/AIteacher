@@ -1,6 +1,15 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Plugin } from 'vite'
 import { handleVoiceChat } from './voiceChat'
+import {
+  AivisEngineError,
+  DEFAULT_ENGINE_URL,
+  DEFAULT_VOICE_PARAMS,
+  listVoices,
+  resolveStyleId,
+  synthesize,
+  type VoiceParams,
+} from './aivis'
 
 /**
  * 開発サーバー（npm run dev）に、雑談の API を同居させる。
@@ -29,7 +38,31 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.end(JSON.stringify(body))
 }
 
-export function chatApiPlugin(apiKey: string | undefined): Plugin {
+interface TtsRequestBody {
+  text?: unknown
+  speaker?: unknown
+  style?: unknown
+  params?: Partial<VoiceParams>
+}
+
+function toParams(raw: Partial<VoiceParams> | undefined): VoiceParams {
+  const num = (value: unknown, fallback: number) =>
+    typeof value === 'number' && Number.isFinite(value) ? value : fallback
+  return {
+    speedScale: num(raw?.speedScale, DEFAULT_VOICE_PARAMS.speedScale),
+    pitchScale: num(raw?.pitchScale, DEFAULT_VOICE_PARAMS.pitchScale),
+    intonationScale: num(raw?.intonationScale, DEFAULT_VOICE_PARAMS.intonationScale),
+    tempoDynamicsScale: num(raw?.tempoDynamicsScale, DEFAULT_VOICE_PARAMS.tempoDynamicsScale),
+  }
+}
+
+export interface ChatApiOptions {
+  apiKey: string | undefined
+  /** AivisSpeech Engine の場所。既定は 127.0.0.1:10101 */
+  engineUrl: string
+}
+
+export function chatApiPlugin({ apiKey, engineUrl }: ChatApiOptions): Plugin {
   return {
     name: 'aitecher-chat-api',
     // 本番のビルドには含めない
@@ -51,8 +84,67 @@ export function chatApiPlugin(apiKey: string | undefined): Plugin {
         })()
       })
 
+      // 使える声の一覧。設定画面の選択肢に使う
+      server.middlewares.use('/api/tts/voices', (req, res) => {
+        void (async () => {
+          try {
+            sendJson(res, 200, { ok: true, voices: await listVoices(engineUrl) })
+          } catch (error) {
+            const message =
+              error instanceof AivisEngineError
+                ? error.message
+                : 'AivisSpeech につながりません。'
+            sendJson(res, 200, { ok: false, message, voices: [] })
+          }
+        })()
+      })
+
+      // 返事を音声にする
+      server.middlewares.use('/api/tts', (req, res) => {
+        void (async () => {
+          if (req.method !== 'POST') {
+            sendJson(res, 405, { ok: false, message: 'POST で呼んでください。' })
+            return
+          }
+          const startedAt = Date.now()
+          try {
+            const body = JSON.parse(await readBody(req)) as TtsRequestBody
+            const text = typeof body.text === 'string' ? body.text.trim() : ''
+            if (!text) {
+              sendJson(res, 400, { ok: false, message: '読み上げる文章がありません。' })
+              return
+            }
+            const speaker = typeof body.speaker === 'string' ? body.speaker : ''
+            const style = typeof body.style === 'string' ? body.style : ''
+            const styleId = await resolveStyleId(speaker, style, engineUrl)
+            const { audio, contentType } = await synthesize(
+              text,
+              styleId,
+              toParams(body.params),
+              engineUrl,
+            )
+
+            // 本文は残さない。長さと時間だけ
+            server.config.logger.info(
+              `  [tts] ${text.length}文字 ${Date.now() - startedAt}ms ${(audio.byteLength / 1024).toFixed(0)}KB`,
+            )
+            res.statusCode = 200
+            res.setHeader('content-type', contentType)
+            res.setHeader('cache-control', 'no-store')
+            res.end(Buffer.from(audio))
+          } catch (error) {
+            const retryable = error instanceof AivisEngineError ? error.retryable : true
+            const message =
+              error instanceof AivisEngineError ? error.message : '音声を作れませんでした。'
+            server.config.logger.warn(`  [tts] 失敗 (${Date.now() - startedAt}ms) ${message}`)
+            sendJson(res, 503, { ok: false, retryable, message })
+          }
+        })()
+      })
+
       const ready = apiKey ? 'ANTHROPIC_API_KEY を読み込みました' : 'ANTHROPIC_API_KEY が未設定です（雑談の返事は作れません）'
       server.config.logger.info(`  ➜  雑談 API: /api/voice-chat  ${ready}`)
+      server.config.logger.info(`  ➜  音声 API: /api/tts  AivisSpeech = ${engineUrl}`)
     },
   }
 }

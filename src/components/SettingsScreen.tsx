@@ -33,6 +33,38 @@ export function SettingsScreen({ settings, onChange, onClose }: SettingsScreenPr
       </div>
 
       <div className="card">
+        <div className="field">
+          <span>雑談（おためし）</span>
+          <p className="muted" style={{ fontSize: 14, margin: 0 }}>
+            定期テストの聞き取りとは別の機能です。切っても聞き取りには影響しません。
+          </p>
+        </div>
+
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={settings.chatEnabled}
+            onChange={(event) => patch({ chatEnabled: event.target.checked })}
+          />
+          <span>
+            <strong>雑談メニューを使う</strong>
+            <span className="toggle__note">最初の画面に「雑談してみる」が出ます</span>
+          </span>
+        </label>
+
+        {settings.chatEnabled && (
+          <label className="field" style={{ marginTop: 14 }}>
+            <span>最初のひとこと</span>
+            <input
+              className="input"
+              value={settings.chatOpening}
+              onChange={(event) => patch({ chatOpening: event.target.value })}
+            />
+          </label>
+        )}
+      </div>
+
+      <div className="card">
         <label className="field">
           <span>面談の名前</span>
           <input

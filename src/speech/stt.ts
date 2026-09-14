@@ -21,7 +21,7 @@ export type ListenResult =
   | { status: 'aborted' }
   | { status: 'error'; code: string; message: string }
 
-function getRecognitionCtor(): { new (): SpeechRecognition } | undefined {
+export function getRecognitionCtor(): { new (): SpeechRecognition } | undefined {
   if (typeof window === 'undefined') return undefined
   return window.SpeechRecognition ?? window.webkitSpeechRecognition
 }

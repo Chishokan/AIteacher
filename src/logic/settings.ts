@@ -25,6 +25,12 @@ export interface Settings {
   includeReview: boolean
   /** 次の目標も聞く */
   includeGoal: boolean
+
+  // ---- 雑談（定期テストの聞き取りとは独立した機能） ----
+  /** 雑談メニューを使えるようにする */
+  chatEnabled: boolean
+  /** 雑談の最初のひとこと */
+  chatOpening: string
 }
 
 export const defaultSettings: Settings = {
@@ -41,4 +47,7 @@ export const defaultSettings: Settings = {
   includeReport: false,
   includeReview: false,
   includeGoal: false,
+
+  chatEnabled: true,
+  chatOpening: 'こんにちは。今日はどんな一日だった？',
 }

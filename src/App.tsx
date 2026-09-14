@@ -4,6 +4,7 @@ import { InterviewScreen } from './components/InterviewScreen'
 import { ResultScreen } from './components/ResultScreen'
 import { SettingsScreen } from './components/SettingsScreen'
 import { HistoryScreen } from './components/HistoryScreen'
+import { ChatScreen } from './components/ChatScreen'
 import { buildScenario } from './data/scenario'
 import { useInterview } from './hooks/useInterview'
 import { loadSessions, loadSettings, saveSession, saveSettings, deleteSession } from './logic/storage'
@@ -13,7 +14,7 @@ import { unlockSpeechSynthesis } from './speech/tts'
 import { unlockAudio } from './speech/clips'
 import { requestMicrophone, type MicStatus } from './speech/mic'
 
-type Screen = 'start' | 'interview' | 'result' | 'settings' | 'history'
+type Screen = 'start' | 'interview' | 'result' | 'settings' | 'history' | 'chat'
 
 export function App() {
   const [screen, setScreen] = useState<Screen>('start')
@@ -82,6 +83,19 @@ export function App() {
     [actions],
   )
 
+  /**
+   * 雑談を開く。聞き取りとは別の機能なので、進行も画面も共有しない。
+   * マイクの許可だけは、ここでも押した直後に取っておく
+   */
+  const openChat = useCallback(async () => {
+    unlockSpeechSynthesis()
+    unlockAudio()
+    setPreparingMic(true)
+    setMicStatus(await requestMicrophone())
+    setPreparingMic(false)
+    setScreen('chat')
+  }, [])
+
   const stopInterview = useCallback(() => {
     actions.stop()
     setScreen('start')
@@ -106,6 +120,7 @@ export function App() {
           onStart={(name) => void begin(name)}
           onOpenSettings={() => setScreen('settings')}
           onOpenHistory={() => setScreen('history')}
+          onOpenChat={settings.chatEnabled ? () => void openChat() : undefined}
         />
       )}
 
@@ -128,6 +143,18 @@ export function App() {
           session={viewing}
           onRestart={() => void begin(studentName || viewing.studentName)}
           onHome={() => setScreen('start')}
+        />
+      )}
+
+      {screen === 'chat' && (
+        <ChatScreen
+          avatarId={settings.avatarId}
+          micStatus={micStatus}
+          opening={settings.chatOpening}
+          rate={settings.rate}
+          pitch={settings.pitch}
+          voiceURI={settings.voiceURI}
+          onClose={() => setScreen('start')}
         />
       )}
 

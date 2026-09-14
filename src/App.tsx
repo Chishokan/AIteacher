@@ -151,6 +151,7 @@ export function App() {
           avatarId={settings.avatarId}
           micStatus={micStatus}
           opening={settings.chatOpening}
+          useApi={settings.chatUseApi}
           rate={settings.rate}
           pitch={settings.pitch}
           voiceURI={settings.voiceURI}

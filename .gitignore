@@ -5,3 +5,8 @@ dist/
 .vite/
 coverage/
 *.tsbuildinfo
+
+# API キー（このファイルは git に入れない）
+.env
+.env.*
+!.env.example

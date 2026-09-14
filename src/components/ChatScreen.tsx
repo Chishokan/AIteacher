@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { Avatar } from './Avatar'
 import { useChatTurn } from '../chat/useChatTurn'
+import { createApiReplySource } from '../chat/apiReplySource'
 import { createDummyReplySource } from '../chat/reply'
 import type { AvatarMood } from '../types'
 import type { ChatPhase } from '../chat/types'
@@ -13,6 +14,8 @@ interface ChatScreenProps {
   rate: number
   pitch: number
   voiceURI?: string
+  /** 返事をサーバー（Claude）に作ってもらう。切るとダミーの固定文になる */
+  useApi: boolean
   onClose: () => void
 }
 
@@ -44,10 +47,13 @@ export function ChatScreen({
   rate,
   pitch,
   voiceURI,
+  useApi,
   onClose,
 }: ChatScreenProps) {
-  // ステップ 1 では返事はダミー。ステップ 2 で Claude に差し替える
-  const replySource = useMemo(() => createDummyReplySource(), [])
+  const replySource = useMemo(
+    () => (useApi ? createApiReplySource() : createDummyReplySource()),
+    [useApi],
+  )
   const { state, actions } = useChatTurn({ opening, replySource, rate, pitch, voiceURI })
 
   useEffect(() => {
@@ -65,7 +71,7 @@ export function ChatScreen({
     <div className="chat">
       <div className="appbar">
         <h1 className="appbar__title">雑談</h1>
-        <span className="appbar__badge">おためし</span>
+        <span className="appbar__badge">{useApi ? 'おためし' : 'ダミー返事'}</span>
         <span className="spacer" />
         <button type="button" className="btn" onClick={onClose}>
           終わる

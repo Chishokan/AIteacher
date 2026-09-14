@@ -53,14 +53,30 @@ export function SettingsScreen({ settings, onChange, onClose }: SettingsScreenPr
         </label>
 
         {settings.chatEnabled && (
-          <label className="field" style={{ marginTop: 14 }}>
-            <span>最初のひとこと</span>
-            <input
-              className="input"
-              value={settings.chatOpening}
-              onChange={(event) => patch({ chatOpening: event.target.value })}
-            />
-          </label>
+          <>
+            <label className="toggle">
+              <input
+                type="checkbox"
+                checked={settings.chatUseApi}
+                onChange={(event) => patch({ chatUseApi: event.target.checked })}
+              />
+              <span>
+                <strong>返事をAIに作ってもらう</strong>
+                <span className="toggle__note">
+                  切ると決まった文だけを返します。開発サーバーとAPIキーがなくても動きを試せます
+                </span>
+              </span>
+            </label>
+
+            <label className="field" style={{ marginTop: 14 }}>
+              <span>最初のひとこと</span>
+              <input
+                className="input"
+                value={settings.chatOpening}
+                onChange={(event) => patch({ chatOpening: event.target.value })}
+              />
+            </label>
+          </>
         )}
       </div>
 

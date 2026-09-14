@@ -31,6 +31,8 @@ export interface Settings {
   chatEnabled: boolean
   /** 雑談の最初のひとこと */
   chatOpening: string
+  /** 返事をサーバー（Claude）に作ってもらう。切るとダミーの固定文で動作だけ試せる */
+  chatUseApi: boolean
 }
 
 export const defaultSettings: Settings = {
@@ -50,4 +52,5 @@ export const defaultSettings: Settings = {
 
   chatEnabled: true,
   chatOpening: 'こんにちは。今日はどんな一日だった？',
+  chatUseApi: true,
 }

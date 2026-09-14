@@ -181,7 +181,11 @@ export function useChatTurn({
       // あとから測ると鳴らした時間まで混ざる。返ってきた時点で止める
       let thinkMs: number | null = null
       const replyPromise = replySource
-        .respond(turnsRef.current, { signal: abort.signal, filler: pick.text })
+        .respond(turnsRef.current, {
+          signal: abort.signal,
+          filler: pick.text,
+          scene: pick.scene,
+        })
         .finally(() => {
           replyDone = true
           thinkMs = Date.now() - thinkStart

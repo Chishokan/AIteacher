@@ -21,6 +21,11 @@ export interface RespondOptions {
    * 渡すと「その続きだけを書いて」と伝わり、二重の相槌にならない（引き継ぎ仕様 3.2 の 4）
    */
   filler?: string | null
+  /**
+   * 生徒の発言の場面（つなぎ言葉の判定と同じもの）。
+   * 「質問」なら、サーバー側で「まず答える」返し方に切り替わる
+   */
+  scene?: string | null
 }
 
 export interface ReplySource {

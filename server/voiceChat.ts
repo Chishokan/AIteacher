@@ -1,5 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { CONVERSATION_OPENER, REFUSAL_REPLY, SYSTEM_PROMPT, turnInstruction } from './prompts'
+import { CONVERSATION_OPENER, REFUSAL_REPLY, buildSystemPrompt, turnInstruction } from './prompts'
+import { toPersona, type ChatPersona } from './persona'
+import { chooseReplyStyle } from './replyStyle'
 
 /**
  * 雑談の返事を作る。
@@ -18,8 +20,12 @@ export interface VoiceChatTurn {
 
 export interface VoiceChatRequest {
   turns: VoiceChatTurn[]
-  /** すでに声に出したつなぎ言葉（実装順 5 で使う） */
+  /** すでに声に出したつなぎ言葉。二重の相槌を防ぐ */
   filler?: string | null
+  /** 生徒の発言の場面（つなぎ言葉の判定と同じもの）。「質問」なら、まず答えさせる */
+  scene?: string | null
+  /** アバターのキャラクター設定。省略すると既定のキャラクターになる */
+  persona?: ChatPersona
 }
 
 export type VoiceChatResponse =
@@ -42,7 +48,13 @@ function parseRequest(body: unknown): VoiceChatRequest | null {
   const raw = body as Record<string, unknown>
   if (!Array.isArray(raw.turns) || !raw.turns.every(isTurn)) return null
   const filler = typeof raw.filler === 'string' && raw.filler ? raw.filler : null
-  return { turns: raw.turns as VoiceChatTurn[], filler }
+  const scene = typeof raw.scene === 'string' && raw.scene ? raw.scene : null
+  return {
+    turns: raw.turns as VoiceChatTurn[],
+    filler,
+    scene,
+    persona: toPersona(raw.persona),
+  }
 }
 
 /** 会話の履歴を、API に渡す形に組み立てる */
@@ -58,10 +70,16 @@ export function buildMessages(request: VoiceChatRequest): Anthropic.MessageParam
     messages.push({ role: turn.who === 'ai' ? 'assistant' : 'user', content: turn.text })
   }
 
+  // この回の返し方を決める。毎回おうむ返し＋質問にならないようにするため
+  const style = chooseReplyStyle({
+    aiTurns: request.turns.filter((turn) => turn.who === 'ai').length,
+    scene: request.scene,
+  })
+
   // このターンの注意は、最後の生徒の発言に足す
   const last = messages[messages.length - 1]
   if (last && last.role === 'user' && typeof last.content === 'string') {
-    last.content = `${last.content}\n\n${turnInstruction(request.filler ?? null)}`
+    last.content = `${last.content}\n\n${turnInstruction(request.filler ?? null, style)}`
   }
   return messages
 }
@@ -149,7 +167,7 @@ export async function handleVoiceChat(body: unknown, apiKey: string | undefined)
       max_tokens: 1024,
       // 短い相槌に深く考える必要はない。thinking は送らない（Sonnet 5 では adaptive）
       output_config: { effort: 'low' },
-      system: SYSTEM_PROMPT,
+      system: buildSystemPrompt(request.persona),
       messages: buildMessages(request),
     })
 

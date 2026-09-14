@@ -30,6 +30,33 @@ describe('buildMessages', () => {
     expect(String(last?.content)).toContain('短い相槌をひとこと入れてから')
   })
 
+  it('返し方は回ごとに変わる（毎回おうむ返し＋質問にしない）', () => {
+    // 最初の返事は質問
+    const first = buildMessages({ turns: [ai('こんにちは。'), student('部活だったよ')] })
+    expect(String(first[first.length - 1]?.content)).toContain('短い質問を1つだけ')
+
+    // 3 回目の返事は、質問をせず自分のことを話す回
+    const later = buildMessages({
+      turns: [
+        ai('こんにちは。'),
+        student('部活だったよ'),
+        ai('どうだった？'),
+        student('つかれた'),
+        ai('おつかれー。'),
+        student('明日も朝から練習なんだ'),
+      ],
+    })
+    expect(String(later[later.length - 1]?.content)).toContain('自分の好きなものや考えを')
+  })
+
+  it('生徒に聞かれた回は、まず答えさせる', () => {
+    const messages = buildMessages({
+      turns: [ai('こんにちは。'), student('ミライは何が好きなの？')],
+      scene: '質問',
+    })
+    expect(String(messages[messages.length - 1]?.content)).toContain('素直に答えて')
+  })
+
   it('つなぎ言葉を言った場合は、続きだけを書かせる指示にする', () => {
     const messages = buildMessages({
       turns: [ai('こんにちは。'), student('試合に勝ったよ')],

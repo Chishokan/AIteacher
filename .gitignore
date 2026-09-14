@@ -6,6 +6,10 @@ dist/
 coverage/
 *.tsbuildinfo
 
+# 雑談の事前生成した音声。npm run gen:chat-audio でいつでも作り直せる。
+# 声の設定しだいで中身が変わるので、リポジトリには入れない
+public/audio/chat/
+
 # API キー（このファイルは git に入れない）
 .env
 .env.*

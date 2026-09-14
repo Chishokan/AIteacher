@@ -4,6 +4,7 @@ import { stopAllAudio } from './audioPlayer'
 import type { Voice } from './voice'
 import { startPushToTalk, type PushToTalkHandle } from './pushToTalk'
 import { emptyMetrics, type ChatPhase, type ChatTurn, type TurnMetrics } from './types'
+import { RETRY_NOTICE } from './fixedLines'
 import type { ReplySource } from './reply'
 
 export interface ChatState {
@@ -26,6 +27,12 @@ const INITIAL: ChatState = {
   notice: '',
   metrics: null,
   fatal: null,
+}
+
+interface SayResult {
+  ttsMs: number
+  /** 事前に作っておいた音声を鳴らしたか */
+  prebuilt: boolean
 }
 
 export interface UseChatTurnOptions {
@@ -60,19 +67,21 @@ export function useChatTurn({ opening, replySource, voice, fallbackVoice }: UseC
 
   /**
    * しゃべらせる。用意した声が使えなければ、読み上げに落として続ける。
-   * @returns 音声を用意するのにかかった時間
+   * @returns 音声を用意するのにかかった時間と、事前生成を鳴らしたか
    */
   const say = useCallback(
-    async (text: string, onFirstVoice?: () => void): Promise<number> => {
+    async (text: string, onFirstVoice?: () => void): Promise<SayResult> => {
       patch({ phase: 'speaking' })
       const outcome = await voice.speak(text, { onFirstVoice })
-      if (outcome.status === 'ok') return outcome.ttsMs
+      if (outcome.status === 'ok') return { ttsMs: outcome.ttsMs, prebuilt: outcome.prebuilt }
 
       // 声が出せなくても、字幕は出ているので会話は続ける
       patch({ notice: `${outcome.message} いまはブラウザの読み上げで進めます。` })
-      if (!fallbackVoice) return 0
+      if (!fallbackVoice) return { ttsMs: 0, prebuilt: false }
       const fallback = await fallbackVoice.speak(text, { onFirstVoice })
-      return fallback.status === 'ok' ? fallback.ttsMs : 0
+      return fallback.status === 'ok'
+        ? { ttsMs: fallback.ttsMs, prebuilt: fallback.prebuilt }
+        : { ttsMs: 0, prebuilt: false }
     },
     [fallbackVoice, patch, voice],
   )
@@ -127,11 +136,12 @@ export function useChatTurn({ opening, replySource, voice, fallbackVoice }: UseC
       const metrics: TurnMetrics = { ...emptyMetrics(), thinkMs }
       pushTurn({ who: 'ai', text: reply.text, at: Date.now() })
 
-      const ttsMs = await say(reply.text, () => {
+      const spoken = await say(reply.text, () => {
         metrics.firstVoiceMs = Date.now() - studentDoneAt
         patch({ metrics: { ...metrics } })
       })
-      metrics.ttsMs = ttsMs
+      metrics.ttsMs = spoken.ttsMs
+      metrics.ttsPrebuilt = spoken.prebuilt
 
       patch({ phase: 'idle', metrics: { ...metrics } })
     },
@@ -160,7 +170,7 @@ export function useChatTurn({ opening, replySource, voice, fallbackVoice }: UseC
       }
       if (result.status === 'empty') {
         // 聞き取れなかったときはアバターは話さない
-        patch({ phase: 'idle', interim: '', notice: 'うまく聞き取れませんでした。もう一度押してください。' })
+        patch({ phase: 'idle', interim: '', notice: RETRY_NOTICE })
         return
       }
       patch({ phase: 'idle', interim: '', notice: result.message })

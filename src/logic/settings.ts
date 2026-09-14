@@ -1,5 +1,6 @@
 import { DEFAULT_AVATAR_ID } from '../data/avatarPresets'
 import { DEFAULT_REPORT_SUBJECTS, DEFAULT_TEST_SUBJECTS } from '../data/scenario'
+import { DEFAULT_CHAT_OPENING, DEFAULT_CHAT_VOICE } from '../chat/voiceDefaults'
 
 export interface Settings {
   /** 面談の名前 */
@@ -65,13 +66,15 @@ export const defaultSettings: Settings = {
   includeGoal: false,
 
   chatEnabled: true,
-  chatOpening: 'こんにちは。今日はどんな一日だった？',
+  // 声まわりの初期値は src/chat/voiceDefaults.ts に置いてある。
+  // 事前生成のスクリプトが Node から同じ値を読めるようにするため
+  chatOpening: DEFAULT_CHAT_OPENING,
   chatUseApi: true,
   chatVoiceMode: 'aivis',
-  chatVoiceSpeaker: 'まお',
-  chatVoiceStyle: 'おちつき',
-  chatSpeedScale: 1.0,
-  chatPitchScale: 0.0,
-  chatIntonationScale: 1.0,
-  chatTempoDynamicsScale: 1.0,
+  chatVoiceSpeaker: DEFAULT_CHAT_VOICE.speaker,
+  chatVoiceStyle: DEFAULT_CHAT_VOICE.style,
+  chatSpeedScale: DEFAULT_CHAT_VOICE.speedScale,
+  chatPitchScale: DEFAULT_CHAT_VOICE.pitchScale,
+  chatIntonationScale: DEFAULT_CHAT_VOICE.intonationScale,
+  chatTempoDynamicsScale: DEFAULT_CHAT_VOICE.tempoDynamicsScale,
 }

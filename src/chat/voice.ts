@@ -1,11 +1,15 @@
 import { speak } from '../speech/tts'
 import { playAudio } from './audioPlayer'
+import { fetchPrebuiltAudio } from './prebuiltClips'
 
 /**
  * 返事をしゃべるところ。
  *
  * PC で動かしている AivisSpeech に作ってもらうのが本命。
  * つながらないときはブラウザの読み上げに落として、会話は続けられるようにする。
+ *
+ * 毎回同じ文言（最初のひとこと、つなぎ言葉）は、先に作って置いてあれば
+ * そちらを鳴らす。その場で作ると数秒かかるため。
  */
 
 export interface SpeakOptions {
@@ -15,8 +19,12 @@ export interface SpeakOptions {
 }
 
 export type SpeakOutcome =
-  /** 鳴った。ttsMs は音声を用意するのにかかった時間 */
-  | { status: 'ok'; ttsMs: number }
+  /**
+   * 鳴った。
+   * @property ttsMs 音声を用意するのにかかった時間
+   * @property prebuilt 事前に作っておいたものを鳴らしたか
+   */
+  | { status: 'ok'; ttsMs: number; prebuilt: boolean }
   /** 鳴らせなかった。message を画面に出す */
   | { status: 'failed'; message: string }
 
@@ -38,6 +46,20 @@ export function createAivisVoice(settings: AivisVoiceSettings): Voice {
   return {
     async speak(text, options = {}) {
       const startedAt = Date.now()
+
+      // 先に作ってあるものは、その場で合成せずに鳴らす（待ち時間ゼロ）。
+      // 声や速さを変えたあとは見つからないので、下の合成に落ちる
+      const ready = await fetchPrebuiltAudio(text, settings, options.signal)
+      if (ready) {
+        const ttsMs = Date.now() - startedAt
+        try {
+          await playAudio(ready, options.onFirstVoice, options.signal)
+        } catch {
+          return { status: 'failed', message: '音声を鳴らせませんでした。' }
+        }
+        return { status: 'ok', ttsMs, prebuilt: true }
+      }
+
       let response: Response
       try {
         response = await fetch('/api/tts', {
@@ -57,7 +79,7 @@ export function createAivisVoice(settings: AivisVoiceSettings): Voice {
           signal: options.signal,
         })
       } catch {
-        if (options.signal?.aborted) return { status: 'ok', ttsMs: 0 }
+        if (options.signal?.aborted) return { status: 'ok', ttsMs: 0, prebuilt: false }
         return { status: 'failed', message: '音声を作るところにつながりませんでした。' }
       }
 
@@ -87,7 +109,7 @@ export function createAivisVoice(settings: AivisVoiceSettings): Voice {
       } catch {
         return { status: 'failed', message: '音声を鳴らせませんでした。' }
       }
-      return { status: 'ok', ttsMs }
+      return { status: 'ok', ttsMs, prebuilt: false }
     },
   }
 }
@@ -112,7 +134,7 @@ export function createBrowserVoice(rate?: number, pitch?: number, voiceURI?: str
       } catch {
         return { status: 'failed', message: '読み上げができませんでした。' }
       }
-      return { status: 'ok', ttsMs }
+      return { status: 'ok', ttsMs, prebuilt: false }
     },
   }
 }

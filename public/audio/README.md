@@ -19,6 +19,29 @@ node --experimental-strip-types scripts/gen-audio-manifest.mjs
 node scripts/check-audio.mjs
 ```
 
+## `chat/` は別ものです（雑談の事前生成）
+
+`public/audio/chat/` に入るのは、**雑談**で毎回同じ文言になるものを
+PC の AivisSpeech に作らせた音声です。このフォルダとは作り方も置き方も違います。
+
+| | このフォルダ（定期テストの聞き取り） | `chat/`（雑談） |
+| --- | --- | --- |
+| 作り方 | 人が収録して置く | `npm run gen:chat-audio` |
+| ファイル名 | ID と同じ名前（`greeting.mp3`） | 自動（`opening-54064986.wav`） |
+| git | 入れる | **入れない**（いつでも作り直せるため） |
+
+```bash
+# AivisSpeech を起動してから
+npm run gen:chat-audio
+
+# 作らずに、そろっているかだけ見る
+npm run gen:chat-audio -- --check
+```
+
+**声・速さ・高さ・抑揚を変えたら作り直してください。** 作ったときの条件は
+`chat/manifest.json` に残していて、アプリはいまの設定と食い違えば
+「無いもの」としてその場の合成に落とします。壊れるのではなく、遅くなるだけです。
+
 ## ファイルの条件
 
 | 項目 | 推奨 |

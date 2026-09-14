@@ -170,7 +170,10 @@ export function ChatScreen({ avatarId, micStatus, settings, onClose }: ChatScree
             </div>
             <div>
               <dt>声を作る</dt>
-              <dd>{state.metrics.ttsMs ?? '—'} ms</dd>
+              <dd>
+                {state.metrics.ttsMs ?? '—'} ms
+                {state.metrics.ttsPrebuilt ? '（用意ずみ）' : ''}
+              </dd>
             </div>
           </dl>
         )}

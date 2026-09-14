@@ -57,13 +57,16 @@ export const DEFAULT_VOICE_PARAMS: VoiceParams = {
 }
 
 export class AivisEngineError extends Error {
-  constructor(
-    message: string,
-    /** 待てば直る類か */
-    readonly retryable: boolean,
-  ) {
+  /** 待てば直る類か */
+  readonly retryable: boolean
+
+  // 引数に readonly を付ける書き方（パラメータプロパティ）は使わない。
+  // このファイルは scripts/gen-chat-audio.mjs から Node が直に読むが、
+  // Node の型の読み飛ばしはその書き方に対応していない
+  constructor(message: string, retryable: boolean) {
     super(message)
     this.name = 'AivisEngineError'
+    this.retryable = retryable
   }
 }
 

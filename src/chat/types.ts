@@ -27,6 +27,8 @@ export interface TurnMetrics {
   thinkMs: number | null
   /** 返事を音声にするのにかかった時間 */
   ttsMs: number | null
+  /** 事前に作っておいた音声を鳴らしたか */
+  ttsPrebuilt: boolean
   /** つなぎ言葉を鳴らした回数 */
   fillerCount: number
   /** つなぎ言葉の場面 */
@@ -41,6 +43,7 @@ export function emptyMetrics(): TurnMetrics {
     gapMs: null,
     thinkMs: null,
     ttsMs: null,
+    ttsPrebuilt: false,
     fillerCount: 0,
     fillerScene: null,
     fillerSkipReason: null,

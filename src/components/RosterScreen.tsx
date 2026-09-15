@@ -19,7 +19,7 @@ import { formatProgress, type Student } from '../students/types'
  * 鍵はサーバー側だけが持っていて、ここには渡ってこない。
  */
 
-const SAMPLE = `生徒番号	生徒名	来校状況	来校予定日	取得講座	講座進捗	志望校
+const SAMPLE = `東進ID	生徒名	来校状況	来校予定日	取得講座	講座進捗	志望校
 1001	山田 太郎	順調	2026/9/18	英語長文、数学I	英語長文 12/20、数学I 5/15	東京大学`
 
 interface RosterScreenProps {
@@ -155,7 +155,10 @@ export function RosterScreen({ onClose }: RosterScreenProps) {
           <ul className="roster__list">
             {roster.slice(0, 50).map((student) => (
               <li key={student.id} className="roster__item">
-                <strong>{student.name}</strong>
+                <strong>
+                  {student.name}
+                  <span className="roster__id">{student.id}</span>
+                </strong>
                 <span className="roster__tags">
                   {student.attendance && <span className="roster__tag">{student.attendance}</span>}
                   {student.nextVisit && (
@@ -179,7 +182,7 @@ export function RosterScreen({ onClose }: RosterScreenProps) {
 }
 
 const FIELD_LABELS: Record<string, string> = {
-  id: '生徒番号',
+  id: '東進ID',
   name: '生徒名',
   attendance: '来校状況',
   nextVisit: '来校予定日',

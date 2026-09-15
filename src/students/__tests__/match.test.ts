@@ -60,10 +60,24 @@ describe('findById（東進ID）', () => {
     expect(findById(roster, '1001')?.name).toBe('山田 太郎')
   })
 
-  it('全角で入れても、空白やハイフンが入っていても引き当てる', () => {
+  it('全角で入れても、空白や記号が混ざっていても引き当てる', () => {
     expect(findById(roster, '１００１')?.id).toBe('1001')
     expect(findById(roster, ' 1001 ')?.id).toBe('1001')
     expect(findById(roster, '10-01')?.id).toBe('1001')
+    expect(findById(roster, 'No.1001')?.id).toBe('1001')
+  })
+
+  it('表計算ソフトで先頭の 0 が落ちていても引き当てる', () => {
+    const zero = [student({ id: '101' })]
+    expect(findById(zero, '0101')?.id).toBe('101')
+  })
+
+  it('0 を外すと 2 人に当たるなら、当てずに null（取り違えないため）', () => {
+    const both = [student({ id: '101' }), student({ id: '0101', name: '鈴木 花子' })]
+    // ぴったり合うほうが先に当たる
+    expect(findById(both, '0101')?.name).toBe('鈴木 花子')
+    // どちらでもない書き方だと決められない
+    expect(findById(both, '00101')).toBeNull()
   })
 
   it('同姓がいても取り違えない（名前と違って一意なので）', () => {
@@ -80,9 +94,15 @@ describe('findById（東進ID）', () => {
 })
 
 describe('normalizeId', () => {
-  it('突き合わせる形にそろえる', () => {
+  it('数字だけを取り出す（東進ID は数字のみ）', () => {
     expect(normalizeId(' １００１ ')).toBe('1001')
-    expect(normalizeId('AB-1001')).toBe('ab1001')
+    expect(normalizeId('No. 1001')).toBe('1001')
+    expect(normalizeId('1-001')).toBe('1001')
+  })
+
+  it('数字が無ければ空（照合には使えない）', () => {
+    expect(normalizeId('')).toBe('')
+    expect(normalizeId('あいうえお')).toBe('')
   })
 })
 

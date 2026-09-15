@@ -459,6 +459,8 @@ p { margin: 0; line-height: 1.7; }
   background: var(--panel-soft, rgb(255 255 255 / 0.5));
 }
 
+.roster__id { margin-left: 10px; font-size: 13px; font-weight: 400; color: var(--text-dim); }
+
 .roster__tags { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .roster__tag {

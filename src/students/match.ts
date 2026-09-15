@@ -13,21 +13,35 @@ import type { CourseProgress, Student } from './types'
 
 /**
  * 東進ID（固有ID）を突き合わせる形にそろえる。
- * 全角で入力されることがあるので半角にし、前後の空白と区切りを落とす
+ *
+ * **東進ID は数字だけ。** 全角で入れられたり、空白・ハイフン・「No.」などが
+ * 混ざったりしても当たるよう、数字以外を落としてしまう。
  */
 export function normalizeId(value: string): string {
-  return toHalfWidth(value).trim().replace(/[\s-]/g, '').toLowerCase()
+  return toHalfWidth(value).replace(/\D/g, '')
 }
 
 /**
  * 東進ID で名簿から探す。
  *
  * **こちらが本命。** 同姓や表記ゆれの心配がないので、当たれば確実。
+ *
+ * 表計算ソフトが ID を数値として扱うと、先頭の 0 が落ちることがある
+ * （「0101」が「101」になる）。そのときのために 0 を外した形でも見るが、
+ * **2 人以上に当たるなら当てない。** 取り違えるくらいなら見つからないほうがよい。
  */
 export function findById(roster: Student[], id: string): Student | null {
   const key = normalizeId(id)
   if (!key) return null
-  return roster.find((student) => normalizeId(student.id) === key) ?? null
+
+  const exact = roster.find((student) => normalizeId(student.id) === key)
+  if (exact) return exact
+
+  const trim = (value: string) => value.replace(/^0+/, '')
+  const trimmed = trim(key)
+  if (!trimmed) return null
+  const loose = roster.filter((student) => trim(normalizeId(student.id)) === trimmed)
+  return loose.length === 1 ? loose[0]! : null
 }
 
 /**

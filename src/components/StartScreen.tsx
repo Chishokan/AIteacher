@@ -5,7 +5,7 @@ import { isSpeechRecognitionSupported } from '../speech/stt'
 import { isSpeechSynthesisSupported } from '../speech/tts'
 import { checkMicrophone, MIC_MESSAGES, type MicStatus } from '../speech/mic'
 import { loadLocalRoster } from '../students/source'
-import { findById } from '../students/match'
+import { findById, normalizeId } from '../students/match'
 
 interface StartScreenProps {
   scenario: Scenario
@@ -123,9 +123,12 @@ export function StartScreen({
             <input
               className="input"
               value={toshinId}
-              onChange={(event) => setToshinId(event.target.value)}
+              // 東進ID は数字のみ。全角で入れられても、その場で半角の数字だけにする
+              onChange={(event) => setToshinId(normalizeId(event.target.value))}
               placeholder="例）1001"
+              type="text"
               inputMode="numeric"
+              pattern="[0-9]*"
               autoComplete="off"
             />
             <span className="field__note">

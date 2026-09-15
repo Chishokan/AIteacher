@@ -9,7 +9,7 @@ import { planAt, stepAt } from '../coaching/plan'
 import { buildRecord, csvFileName, recordToCSV, type CoachingRecord } from '../coaching/record'
 import { saveCoachingRecord } from '../coaching/storage'
 import { createStudentSource } from '../students/source'
-import { findStudent, formatDate } from '../students/match'
+import { lookupStudent, formatDate } from '../students/match'
 import { studentFacts } from '../students/facts'
 import type { Student } from '../students/types'
 import { downloadText } from '../logic/interview'
@@ -32,6 +32,8 @@ interface CoachingScreenProps {
   micStatus: MicStatus
   settings: Settings
   studentName?: string
+  /** 東進ID。名簿とはこれで突き合わせる（名前は同姓があると当てられない） */
+  toshinId?: string
   onClose: () => void
 }
 
@@ -48,6 +50,7 @@ export function CoachingScreen({
   micStatus,
   settings,
   studentName,
+  toshinId,
   onClose,
 }: CoachingScreenProps) {
   const agenda = DEFAULT_AGENDA
@@ -73,8 +76,8 @@ export function CoachingScreen({
   const studentRef = useRef<Student | null>(null)
 
   useEffect(() => {
-    if (!studentName?.trim()) {
-      setRosterNotice('名前が入っていないので、名簿とは照らし合わせません。')
+    if (!toshinId?.trim() && !studentName?.trim()) {
+      setRosterNotice('東進ID も名前も入っていないので、名簿とは照らし合わせません。')
       return
     }
     let active = true
@@ -85,15 +88,22 @@ export function CoachingScreen({
         setRosterNotice(result.kind === 'unconfigured' ? '' : result.message)
         return
       }
-      const found = findStudent(result.students, studentName)
+      // 東進ID があればそれで引く。無ければ名前で探す（同姓がいると当てられない）
+      const found = lookupStudent(result.students, { id: toshinId, name: studentName })
       studentRef.current = found
       setStudent(found)
-      setRosterNotice(found ? '' : `名簿に「${studentName}」が見つかりませんでした。`)
+      setRosterNotice(
+        found
+          ? ''
+          : toshinId?.trim()
+            ? `名簿に東進ID「${toshinId}」が見つかりませんでした。`
+            : `名簿に「${studentName}」が見つかりませんでした。東進ID を入れると確実に引き当てられます。`,
+      )
     })
     return () => {
       active = false
     }
-  }, [settings.studentSource, studentName])
+  }, [settings.studentSource, studentName, toshinId])
 
   const facts = useMemo(() => studentFacts(student), [student])
 
@@ -145,7 +155,9 @@ export function CoachingScreen({
       answersRef.current,
       {
         id: `coaching-${Date.now()}`,
-        studentName: studentName ?? '',
+        studentName: studentRef.current?.name || (studentName ?? ''),
+        // 記録を名簿に突き合わせ直せるよう、東進ID も残す
+        toshinId: studentRef.current?.id || (toshinId ?? ''),
         startedAt: startedAtRef.current,
         finishedAt: new Date().toISOString(),
       },
@@ -153,7 +165,7 @@ export function CoachingScreen({
     )
     setRecord(built)
     saveCoachingRecord(built)
-  }, [agenda, record, state.phase, studentName])
+  }, [agenda, record, state.phase, studentName, toshinId])
 
   const micWarning = micStatus !== 'granted' && micStatus !== 'unsupported'
   const micDisabled = state.phase === 'speaking' || state.phase === 'thinking' || !!state.fatal
@@ -168,7 +180,8 @@ export function CoachingScreen({
         <h1 className="appbar__title">コーチングタイム</h1>
         <span className="appbar__badge">{settings.chatUseApi ? 'おためし' : 'ダミー返事'}</span>
         <span className="appbar__badge appbar__badge--quiet">
-          {studentName || '名前なし'}
+          {student?.name || studentName || '名前なし'}
+          {student ? `（${student.id}）` : ''}
         </span>
         <span className="spacer" />
         <button type="button" className="btn" onClick={onClose}>

@@ -1,4 +1,4 @@
-import { normalize } from '../logic/normalize'
+import { normalize, toHalfWidth } from '../logic/normalize'
 import type { CourseProgress, Student } from './types'
 
 /**
@@ -10,6 +10,38 @@ import type { CourseProgress, Student } from './types'
  *
  * ここは副作用のない関数だけ（`__tests__/match.test.ts`）。
  */
+
+/**
+ * 東進ID（固有ID）を突き合わせる形にそろえる。
+ * 全角で入力されることがあるので半角にし、前後の空白と区切りを落とす
+ */
+export function normalizeId(value: string): string {
+  return toHalfWidth(value).trim().replace(/[\s-]/g, '').toLowerCase()
+}
+
+/**
+ * 東進ID で名簿から探す。
+ *
+ * **こちらが本命。** 同姓や表記ゆれの心配がないので、当たれば確実。
+ */
+export function findById(roster: Student[], id: string): Student | null {
+  const key = normalizeId(id)
+  if (!key) return null
+  return roster.find((student) => normalizeId(student.id) === key) ?? null
+}
+
+/**
+ * 東進ID があればそれで、無ければ名前で探す。
+ *
+ * 名前での照合は、同姓の生徒がいると当てられない。
+ * **ID を入れてもらうのがいちばん確実**なので、そちらを先に見る。
+ */
+export function lookupStudent(
+  roster: Student[],
+  who: { id?: string; name?: string },
+): Student | null {
+  return (who.id ? findById(roster, who.id) : null) ?? (who.name ? findStudent(roster, who.name) : null)
+}
 
 /** 名前で名簿から探す。表記のゆれ（空白・全半角）は吸収する */
 export function findStudent(roster: Student[], name: string): Student | null {

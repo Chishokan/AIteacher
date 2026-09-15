@@ -6,6 +6,7 @@ import type { Student } from '../../students/types'
 const META = {
   id: 'coaching-1',
   studentName: '山田 太郎',
+  toshinId: '1001',
   startedAt: '2026-09-15T10:00:00.000Z',
   finishedAt: '2026-09-15T10:05:00.000Z',
 }
@@ -133,6 +134,21 @@ describe('recordToCSV', () => {
     const csv = recordToCSV(record({ worry: ['英語, 数学が心配'] }))
     expect(csv).toContain('"英語, 数学が心配"')
     expect(csv).toContain('不安なこと、気になっていること')
+  })
+})
+
+describe('東進ID', () => {
+  it('記録に残す（あとから名簿に突き合わせ直せるように）', () => {
+    expect(record({}).toshinId).toBe('1001')
+  })
+
+  it('CSV の見出しにも出す', () => {
+    expect(recordToCSV(record({}))).toContain('東進ID,1001')
+  })
+
+  it('入れずに聞き取ったときは、その旨を残す', () => {
+    const noId = buildRecord(DEFAULT_AGENDA, new Map(), { ...META, toshinId: '' })
+    expect(recordToCSV(noId)).toContain('東進ID,（未入力）')
   })
 })
 

@@ -51,6 +51,8 @@ export interface RosterCheck {
 export interface CoachingRecord {
   id: string
   studentName: string
+  /** 東進ID（固有ID）。あとから名簿に突き合わせ直すために残す */
+  toshinId: string
   startedAt: string
   finishedAt: string
   items: CoachingItem[]
@@ -65,7 +67,13 @@ export interface CoachingRecord {
 export function buildRecord(
   agenda: CoachingAgenda,
   answers: Map<string, string[]>,
-  meta: { id: string; studentName: string; startedAt: string; finishedAt: string },
+  meta: {
+    id: string
+    studentName: string
+    toshinId: string
+    startedAt: string
+    finishedAt: string
+  },
   /** 名簿で引き当てた生徒。無ければ照らし合わせをしない */
   student?: Student | null,
 ): CoachingRecord {
@@ -126,6 +134,8 @@ export function recordToCSV(record: CoachingRecord): string {
   ]
   const header = [
     ['生徒', record.studentName || '（名前なし）'],
+    // 表計算ソフトで名簿と突き合わせ直すときの鍵
+    ['東進ID', record.toshinId || '（未入力）'],
     ['実施日時', new Date(record.startedAt).toLocaleString('ja-JP')],
     [],
   ]

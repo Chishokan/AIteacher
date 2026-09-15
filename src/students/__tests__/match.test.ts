@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { checkVisit, findStudent, formatDate, matchCourses, slowestCourse, spokenDate } from '../match'
+import {
+  checkVisit,
+  findById,
+  findStudent,
+  formatDate,
+  lookupStudent,
+  matchCourses,
+  normalizeId,
+  slowestCourse,
+  spokenDate,
+} from '../match'
 import type { Student } from '../types'
 
 const TODAY = new Date(2026, 8, 15) // 2026-09-15（火）
@@ -40,6 +50,60 @@ describe('findStudent', () => {
   it('名簿にいなければ null', () => {
     expect(findStudent(roster, '田中')).toBeNull()
     expect(findStudent(roster, '')).toBeNull()
+  })
+})
+
+describe('findById（東進ID）', () => {
+  const roster = [student({ id: '1001' }), student({ id: '1002', name: '鈴木 花子' })]
+
+  it('東進ID で確実に引き当てる', () => {
+    expect(findById(roster, '1001')?.name).toBe('山田 太郎')
+  })
+
+  it('全角で入れても、空白やハイフンが入っていても引き当てる', () => {
+    expect(findById(roster, '１００１')?.id).toBe('1001')
+    expect(findById(roster, ' 1001 ')?.id).toBe('1001')
+    expect(findById(roster, '10-01')?.id).toBe('1001')
+  })
+
+  it('同姓がいても取り違えない（名前と違って一意なので）', () => {
+    const sameName = [student({ id: '1001' }), student({ id: '1002', name: '山田 太郎' })]
+    expect(findById(sameName, '1002')?.id).toBe('1002')
+    // 名前ではどちらか決められない
+    expect(findStudent(sameName, '山田 太郎')?.id).toBe('1001')
+  })
+
+  it('名簿に無ければ null', () => {
+    expect(findById(roster, '9999')).toBeNull()
+    expect(findById(roster, '')).toBeNull()
+  })
+})
+
+describe('normalizeId', () => {
+  it('突き合わせる形にそろえる', () => {
+    expect(normalizeId(' １００１ ')).toBe('1001')
+    expect(normalizeId('AB-1001')).toBe('ab1001')
+  })
+})
+
+describe('lookupStudent', () => {
+  const roster = [student({ id: '1001' }), student({ id: '1002', name: '鈴木 花子' })]
+
+  it('東進ID があれば、そちらを優先する', () => {
+    // 名前が食い違っていても、ID が本命
+    expect(lookupStudent(roster, { id: '1002', name: '山田 太郎' })?.name).toBe('鈴木 花子')
+  })
+
+  it('東進ID が無ければ、名前で探す', () => {
+    expect(lookupStudent(roster, { name: '鈴木 花子' })?.id).toBe('1002')
+  })
+
+  it('東進ID が名簿に無ければ、名前で探し直す', () => {
+    expect(lookupStudent(roster, { id: '9999', name: '鈴木 花子' })?.id).toBe('1002')
+  })
+
+  it('どちらも無ければ null', () => {
+    expect(lookupStudent(roster, {})).toBeNull()
   })
 })
 

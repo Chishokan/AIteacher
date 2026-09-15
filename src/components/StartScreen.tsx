@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Avatar } from './Avatar'
 import type { Scenario } from '../types'
 import { isSpeechRecognitionSupported } from '../speech/stt'
 import { isSpeechSynthesisSupported } from '../speech/tts'
 import { checkMicrophone, MIC_MESSAGES, type MicStatus } from '../speech/mic'
+import { loadLocalRoster } from '../students/source'
+import { findById } from '../students/match'
 
 interface StartScreenProps {
   scenario: Scenario
@@ -15,11 +17,17 @@ interface StartScreenProps {
   onOpenSettings: () => void
   onOpenHistory: () => void
   /** 雑談メニュー。設定で切っているときは渡されない。名前はつなぎ言葉に使う */
-  onOpenChat?: (studentName: string) => void
+  onOpenChat?: (who: StudentInput) => void
   /** コーチングタイムの聞き取り。設定で切っているときは渡されない */
-  onOpenCoaching?: (studentName: string) => void
+  onOpenCoaching?: (who: StudentInput) => void
   /** 生徒名簿の取り込み */
   onOpenRoster: () => void
+}
+
+/** 誰の聞き取りか。東進ID があれば、名簿とはこちらで突き合わせる */
+export interface StudentInput {
+  name: string
+  toshinId: string
 }
 
 export function StartScreen({
@@ -34,7 +42,18 @@ export function StartScreen({
   onOpenRoster,
 }: StartScreenProps) {
   const [name, setName] = useState('')
+  const [toshinId, setToshinId] = useState('')
   const [micStatus, setMicStatus] = useState<MicStatus>('unsupported')
+  /** 名簿を取り込んであるときだけ、東進ID で引き当てられる */
+  const [roster] = useState(() => loadLocalRoster())
+
+  // 東進ID を入れたら、名簿から名前を出す。入力の手間を減らし、取り違えも防ぐ
+  const matched = useMemo(() => (toshinId ? findById(roster, toshinId) : null), [roster, toshinId])
+  useEffect(() => {
+    if (matched) setName(matched.name)
+  }, [matched])
+
+  const who: StudentInput = { name, toshinId }
 
   // すでに拒否されている場合は、はじめる前に気づけるようにしておく
   useEffect(() => {
@@ -98,6 +117,29 @@ export function StartScreen({
           <p className="banner banner--danger">{MIC_MESSAGES.denied}</p>
         )}
 
+        {roster.length > 0 && (
+          <label className="field">
+            <span>東進ID</span>
+            <input
+              className="input"
+              value={toshinId}
+              onChange={(event) => setToshinId(event.target.value)}
+              placeholder="例）1001"
+              inputMode="numeric"
+              autoComplete="off"
+            />
+            <span className="field__note">
+              {matched ? (
+                <strong>{matched.name} さん（名簿と照らし合わせます）</strong>
+              ) : toshinId ? (
+                `名簿に見つかりません（${roster.length} 人ぶん取り込み済み）`
+              ) : (
+                `入れると名簿と照らし合わせます。${roster.length} 人ぶん取り込み済み`
+              )}
+            </span>
+          </label>
+        )}
+
         <label className="field">
           <span>生徒の名前</span>
           <input
@@ -132,7 +174,7 @@ export function StartScreen({
             type="button"
             className="btn btn--block"
             disabled={preparingMic}
-            onClick={() => onOpenCoaching(name)}
+            onClick={() => onOpenCoaching(who)}
           >
             📋 コーチングタイムの聞き取り
           </button>
@@ -143,7 +185,7 @@ export function StartScreen({
             type="button"
             className="btn btn--block"
             disabled={preparingMic}
-            onClick={() => onOpenChat(name)}
+            onClick={() => onOpenChat(who)}
           >
             💬 雑談してみる（おためし）
           </button>

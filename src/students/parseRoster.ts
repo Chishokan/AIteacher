@@ -16,7 +16,8 @@ import type { CourseProgress, Student } from './types'
 
 /** 見出しの書き方のゆれ。左が名簿の項目、右が受け付ける見出し */
 const HEADERS: ReadonlyArray<readonly [keyof Student | 'none', readonly string[]]> = [
-  ['id', ['生徒番号', '生徒id', 'id', '会員番号', '番号']],
+  // 東進ID が固有の鍵。これがあれば、名前のあいまい一致に頼らずに済む
+  ['id', ['東進id', '東進生徒id', '生徒番号', '生徒id', '会員番号', 'id', '番号']],
   ['name', ['生徒名', '氏名', '名前', '生徒']],
   ['attendance', ['来校状況', '来校', '出席状況', '登校状況']],
   ['nextVisit', ['来校予定日', '次回来校', '次回来校日', '来校予定', '次回予定']],

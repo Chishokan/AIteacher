@@ -25,6 +25,11 @@ describe('parseRoster', () => {
     })
   })
 
+  it('東進ID の列があれば、それを固有の鍵にする', () => {
+    const tsv = '東進ID\t生徒名\n1001\t山田 太郎'
+    expect(parseRoster(tsv, TODAY).students[0]!.id).toBe('1001')
+  })
+
   it('カンマ区切り（CSV）も読む', () => {
     const csv = '生徒名,志望校\n山田 太郎,東京大学'
     expect(parseRoster(csv, TODAY).students[0]).toMatchObject({
@@ -81,6 +86,11 @@ describe('parseRoster', () => {
 })
 
 describe('mapHeaders', () => {
+  it('東進ID を固有の鍵として読む', () => {
+    const map = mapHeaders(['東進ID', '生徒名'])
+    expect([...map.values()]).toEqual(['id', 'name'])
+  })
+
   it('見出しの書き方のゆれを吸収する', () => {
     const map = mapHeaders(['氏名', '次回来校日', '第一志望'])
     expect([...map.values()]).toEqual(['name', 'nextVisit', 'school'])

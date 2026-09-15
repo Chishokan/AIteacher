@@ -8,13 +8,15 @@ describe('fixedLines', () => {
     expect(lines[0]?.text).toBe('こんにちは。今日はどんな一日だった？')
     expect(lines[1]?.id).toBe('retry-notice')
     expect(lines[1]?.text).toBe(RETRY_NOTICE)
-    // つなぎ言葉 17 本（名前入りの 2 本は名前が無いので作らない）
-    expect(lines).toHaveLength(19)
+    // 最初のひとこと + 聞き返し + コーチングの 6 本 + つなぎ言葉 17 本
+    // （名前入りの 2 本は、名前が無いので作らない）
+    expect(lines).toHaveLength(25)
+    expect(lines.map((l) => l.id)).toContain('coach-plan-rate')
   })
 
   it('名前を渡すと、名前入りのつなぎ言葉も作る', () => {
     const lines = fixedLines({ opening: 'やあ。', studentName: 'ゆうと' })
-    expect(lines).toHaveLength(21)
+    expect(lines).toHaveLength(27)
     expect(lines.filter((l) => l.text.includes('ゆうと'))).toHaveLength(2)
   })
 

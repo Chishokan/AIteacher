@@ -9,6 +9,9 @@ import type { ChatTurn } from './types'
 
 const ENDPOINT = '/api/voice-chat'
 
+/** 雑談か、コーチングタイムか。サーバー側で指示文が変わる */
+export type ChatMode = 'chat' | 'coaching'
+
 interface ServerResponse {
   ok: boolean
   text?: string
@@ -16,9 +19,13 @@ interface ServerResponse {
   message?: string
 }
 
-export function createApiReplySource(): ReplySource {
+/** @param mode 省略すると雑談 */
+export function createApiReplySource(mode: ChatMode = 'chat'): ReplySource {
   return {
-    async respond(history: ChatTurn[], { signal, filler, scene, closing } = {}): Promise<ReplyResult> {
+    async respond(
+      history: ChatTurn[],
+      { signal, filler, scene, closing, topic, style } = {},
+    ): Promise<ReplyResult> {
       let response: Response
       try {
         response = await fetch(ENDPOINT, {
@@ -32,6 +39,10 @@ export function createApiReplySource(): ReplySource {
             scene: scene ?? null,
             // 1 セットの最後。話を広げずに締めさせる
             closing: closing ?? false,
+            // コーチングタイムで聞いている話題と、返し方の決め打ち
+            mode,
+            topic: topic ?? null,
+            style: style ?? null,
           }),
           signal,
         })

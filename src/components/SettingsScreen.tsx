@@ -36,13 +36,29 @@ export function SettingsScreen({ settings, onChange, onClose }: SettingsScreenPr
 
       <div className="card">
         <div className="field">
-          <span>雑談（おためし）</span>
+          <span>話して聞き取る機能（おためし）</span>
           <p className="muted" style={{ fontSize: 14, margin: 0 }}>
-            定期テストの聞き取りとは別の機能です。切っても聞き取りには影響しません。
+            コーチングタイムの聞き取りと雑談です。定期テストの聞き取りとは別の機能で、
+            切っても聞き取りには影響しません。声の設定はどちらにも使われます。
           </p>
         </div>
 
         <label className="toggle">
+          <input
+            type="checkbox"
+            checked={settings.coachingEnabled}
+            onChange={(event) => patch({ coachingEnabled: event.target.checked })}
+          />
+          <span>
+            <strong>コーチングタイムの聞き取りを使う</strong>
+            <span className="toggle__note">
+              最初の画面に「コーチングタイムの聞き取り」が出ます。計画実行率・今日の講座・
+              不安なこと・良かったことの4つを順に聞いて、記録に残します
+            </span>
+          </span>
+        </label>
+
+        <label className="toggle" style={{ marginTop: 10 }}>
           <input
             type="checkbox"
             checked={settings.chatEnabled}
@@ -54,7 +70,7 @@ export function SettingsScreen({ settings, onChange, onClose }: SettingsScreenPr
           </span>
         </label>
 
-        {settings.chatEnabled && (
+        {(settings.chatEnabled || settings.coachingEnabled) && (
           <>
             <label className="toggle">
               <input
@@ -85,35 +101,39 @@ export function SettingsScreen({ settings, onChange, onClose }: SettingsScreenPr
               </span>
             </label>
 
-            <label className="field" style={{ marginTop: 14 }}>
-              <span>1 セットのやりとり（回）</span>
-              <input
-                className="input"
-                type="number"
-                min={1}
-                max={20}
-                value={settings.chatTurnsPerSet}
-                onChange={(event) => {
-                  const value = Number(event.target.value)
-                  if (Number.isFinite(value)) {
-                    patch({ chatTurnsPerSet: Math.min(20, Math.max(1, Math.round(value))) })
-                  }
-                }}
-              />
-              <span className="field__note">
-                この回数を話すと、アバターが話をまとめて「またね」で締めます。
-                そのあとは「もう少し話す」を押すと続けられます
-              </span>
-            </label>
+            {settings.chatEnabled && (
+              <label className="field" style={{ marginTop: 14 }}>
+                <span>雑談の 1 セットのやりとり（回）</span>
+                <input
+                  className="input"
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={settings.chatTurnsPerSet}
+                  onChange={(event) => {
+                    const value = Number(event.target.value)
+                    if (Number.isFinite(value)) {
+                      patch({ chatTurnsPerSet: Math.min(20, Math.max(1, Math.round(value))) })
+                    }
+                  }}
+                />
+                <span className="field__note">
+                  この回数を話すと、アバターが話をまとめて「またね」で締めます。
+                  そのあとは「もう少し話す」を押すと続けられます
+                </span>
+              </label>
+            )}
 
-            <label className="field" style={{ marginTop: 14 }}>
-              <span>最初のひとこと</span>
-              <input
-                className="input"
-                value={settings.chatOpening}
-                onChange={(event) => patch({ chatOpening: event.target.value })}
-              />
-            </label>
+            {settings.chatEnabled && (
+              <label className="field" style={{ marginTop: 14 }}>
+                <span>雑談の最初のひとこと</span>
+                <input
+                  className="input"
+                  value={settings.chatOpening}
+                  onChange={(event) => patch({ chatOpening: event.target.value })}
+                />
+              </label>
+            )}
 
             <div className="field" style={{ marginTop: 18 }}>
               <span>返事の声</span>

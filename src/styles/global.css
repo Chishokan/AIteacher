@@ -443,6 +443,79 @@ p { margin: 0; line-height: 1.7; }
 
 .chat__controls { display: flex; flex-direction: column; gap: 12px; }
 
+/* コーチングタイム。いま何番目の項目を聞いているか */
+.coach__progress {
+  display: flex;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 16px 0;
+}
+
+.coach__progress-step {
+  font-size: 14px;
+  font-weight: 800;
+  color: #ffffff;
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 3px 12px;
+}
+
+.coach__progress-title { font-size: 16px; font-weight: 700; }
+
+.coach__progress-bar {
+  flex: 1 1 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.08);
+  overflow: hidden;
+}
+
+.coach__progress-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--lilac));
+  transition: width 0.3s ease;
+}
+
+/* 聞き取った内容のまとめ */
+.coach__result {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.coach__result-note { margin: 0; font-size: 15px; color: var(--text-dim); }
+
+.coach__rate {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 24px;
+  background: var(--panel-soft, rgb(255 255 255 / 0.5));
+}
+
+.coach__rate-label { font-size: 16px; font-weight: 700; color: var(--text-dim); }
+.coach__rate-value { font-size: 44px; font-weight: 800; }
+
+.coach__items { display: flex; flex-direction: column; gap: 12px; margin: 0; }
+
+.coach__item {
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: var(--panel-soft, rgb(255 255 255 / 0.5));
+}
+
+.coach__item dt { font-size: 14px; font-weight: 800; color: var(--text-dim); }
+.coach__item dd { margin: 6px 0 0; font-size: 17px; line-height: 1.7; }
+.coach__item-empty { color: var(--text-dim); font-style: italic; }
+
 /* 1 セットぶん話し終えたところ。押し直すか、終わるかを選んでもらう */
 .chat__finished {
   display: flex;

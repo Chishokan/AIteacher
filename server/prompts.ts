@@ -56,6 +56,40 @@ ${SPEAKABLE_RULES}
 - 受けとめるだけの回: 「そっかあ、それはよかったねー。」`
 }
 
+/**
+ * コーチングタイムの指示文。
+ *
+ * 雑談と違い、**聞くことが決まっている。** 質問の文言はアプリ側が持っていて、
+ * 受けとめのあとに決まった言い方で読み上げる（`src/coaching/agenda.ts`）。
+ * ここで AI にさせるのは「受けとめ」と、その話題の中の短い深掘りだけ。
+ */
+export function buildCoachingPrompt(persona: ChatPersona = DEFAULT_PERSONA): string {
+  return `あなたは学習塾で、生徒（高校生）のコーチングタイムの聞き役をする「${persona.name}」です。
+決まった項目を順番に聞いていきます。**次の質問はこちらが用意する**ので、あなたは
+生徒の答えを受けとめることと、いまの話題の中で短く掘り下げることだけをしてください。
+
+あなたのこと:
+- 一人称は「${persona.firstPerson}」。
+- ${persona.character}
+
+守ること:
+- 返事は原則ひとつの文だけ。長くても25文字以内。話し言葉で。
+  （回によっては【このターンの注意】で長さを広げます）
+- **いまの話題から離れない。** 次の項目の話は、こちらが質問するまで持ち出さない。
+- **評価も説教もしない。** 実行率が低くても責めない。「もっとやろう」と言わない。
+- 計画や勉強のやり方を指示しない。アドバイスもしない。聞き役に徹する。
+- 不安や心配ごとを打ち明けられたら、まず受けとめる。解決策を出そうとしない。
+- **相手の言葉をそのまま繰り返さない。**
+- **していないことを「した」とは言わない。** あなたはAIなので、体験は語らない。
+- 数字を聞き返すときは「何割くらい？」のように短く。
+
+${SPEAKABLE_RULES}
+
+返事の例:
+- 受けとめる回: 「そっかー、よくがんばったねー。」
+- 掘り下げる回: 「どのあたりが進まなかったの？」`
+}
+
 /** 会話のいちばん最初に置く、生徒側の見えない一言 */
 export const CONVERSATION_OPENER = '（生徒が来ました。会話を始めてください）'
 
@@ -80,8 +114,15 @@ const STYLE_NOTES: Record<ReplyStyle, string> = {
  * @param filler すでに声に出したつなぎ言葉。二重の相槌を防ぐ
  * @param style この回の返し方
  */
-export function turnInstruction(filler: string | null, style: ReplyStyle = 'question'): string {
+export function turnInstruction(
+  filler: string | null,
+  style: ReplyStyle = 'question',
+  topic?: string | null,
+): string {
   const notes: string[] = []
+  if (topic) {
+    notes.push(`いま聞いているのは「${topic}」です。この話題から離れないでください。`)
+  }
   if (filler) {
     notes.push(
       `あなたは相手の発言を聞いた直後に、すでに「${filler}」と声に出しています。その続きとして自然につながる部分だけを返してください。相槌や、同じ意味の言葉から始めないでください。`,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildSystemPrompt, turnInstruction } from '../prompts'
+import { buildCoachingPrompt, buildSystemPrompt, turnInstruction } from '../prompts'
 import { DEFAULT_PERSONA, toPersona } from '../persona'
 
 describe('buildSystemPrompt', () => {
@@ -43,6 +43,34 @@ describe('buildSystemPrompt', () => {
   })
 })
 
+describe('buildCoachingPrompt', () => {
+  it('次の質問はこちらが用意する、と伝える', () => {
+    const prompt = buildCoachingPrompt()
+    expect(prompt).toContain('次の質問はこちらが用意する')
+    expect(prompt).toContain('いまの話題から離れない')
+  })
+
+  it('評価も説教もさせない（コーチングの聞き役なので）', () => {
+    const prompt = buildCoachingPrompt()
+    expect(prompt).toContain('評価も説教もしない')
+    expect(prompt).toContain('実行率が低くても責めない')
+    expect(prompt).toContain('解決策を出そうとしない')
+  })
+
+  it('雑談の指示文とは別もの', () => {
+    expect(buildCoachingPrompt()).not.toBe(buildSystemPrompt())
+  })
+
+  it('キャラクターは雑談と同じものを使う', () => {
+    expect(buildCoachingPrompt({
+      name: 'そら',
+      firstPerson: 'ぼく',
+      character: '元気',
+      likes: '散歩',
+    })).toContain('「そら」')
+  })
+})
+
 describe('turnInstruction', () => {
   it('回ごとの返し方が入る', () => {
     expect(turnInstruction(null, 'question')).toContain('短い質問を1つだけ')
@@ -77,6 +105,12 @@ describe('turnInstruction', () => {
     expect(note).not.toContain('短い相槌をひとこと入れてから')
     // つなぎ言葉があっても、返し方の指示は残る
     expect(note).toContain('質問をしないでください')
+  })
+
+  it('聞いている話題を渡すと、そこから離れさせない', () => {
+    const note = turnInstruction(null, 'question', '今週の計画は、どれくらい実行できた？')
+    expect(note).toContain('いま聞いているのは「今週の計画は、どれくらい実行できた？」です')
+    expect(note).toContain('この話題から離れないでください')
   })
 
   it('注意は 1 つの見出しにまとめる', () => {

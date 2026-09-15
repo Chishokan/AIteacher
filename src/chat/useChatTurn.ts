@@ -42,9 +42,44 @@ interface SayResult {
   prebuilt: boolean
 }
 
+/**
+ * この返事のあと、アバターがどうふるまうか。
+ *
+ * 雑談では「決めた回数で締める」だけだが、コーチングタイムでは
+ * 聞くことが決まっているので、話題と次の質問をここで指図する
+ * （`src/coaching/plan.ts`）。
+ */
+export interface TurnPlan {
+  /** サーバーに渡す、いま聞いている話題。雑談では渡さない */
+  topic?: string | null
+  /** 返し方を決め打ちにする。話題の最後は相槌だけにして、次の質問につなげる */
+  style?: 'echo' | null
+  /** 返事のあとに続けて言う決まり文句（次の質問、締めの言葉） */
+  nextPrompt?: string | null
+  /** この返事で会話を終えるか */
+  closing: boolean
+  /** 記録に残すときの項目の id */
+  topicId?: string | null
+}
+
+/** 生徒が 1 回話し終えて、返事も鳴らし終えたときに渡すもの */
+export interface AnsweredTurn {
+  /** どの項目への答えか。雑談では null */
+  topicId: string | null
+  /** 聞き取った言葉そのまま */
+  transcript: string
+  at: number
+}
+
 export interface UseChatTurnOptions {
   /** アバターの最初のひとこと */
   opening: string
+  /**
+   * 最初に続けて言う決まり文句。
+   * 省略すると `opening` だけを言う。コーチングタイムでは
+   * 「あいさつ」と「1 つめの質問」の 2 つを続けて言う
+   */
+  openingLines?: string[]
   replySource: ReplySource
   /** 返事をしゃべるところ */
   voice: Voice
@@ -62,6 +97,13 @@ export interface UseChatTurnOptions {
    * 「もう少し話す」を押すまで進まない。0 以下にすると区切らない
    */
   turnsPerSet?: number
+  /**
+   * 生徒の n 回目（0 から）の発言に対する進め方。
+   * 省略すると `turnsPerSet` で区切るだけになる（雑談のふるまい）
+   */
+  planTurn?: (studentTurnIndex: number) => TurnPlan
+  /** 生徒が 1 回答え終わるたびに呼ばれる。記録を取るために使う */
+  onAnswer?: (answer: AnsweredTurn) => void
 }
 
 /** つなぎ言葉を言い終えても返事ができていないとき、2 段目までこれだけ待つ */
@@ -81,6 +123,7 @@ function sleep(ms: number): Promise<void> {
  */
 export function useChatTurn({
   opening,
+  openingLines,
   replySource,
   voice,
   fallbackVoice,
@@ -88,6 +131,8 @@ export function useChatTurn({
   isFillerReady,
   studentName,
   turnsPerSet = 5,
+  planTurn,
+  onAnswer,
 }: UseChatTurnOptions) {
   const [state, setState] = useState<ChatState>(INITIAL)
 
@@ -142,11 +187,15 @@ export function useChatTurn({
     turnsRef.current = []
     setTurnsRef.current = 0
     setState({ ...INITIAL })
-    pushTurn({ who: 'ai', text: opening, at: Date.now() })
-    await say(opening)
+    // コーチングタイムでは「あいさつ」と「1 つめの質問」を続けて言う
+    for (const line of openingLines ?? [opening]) {
+      if (!line.trim()) continue
+      pushTurn({ who: 'ai', text: line, at: Date.now() })
+      await say(line)
+    }
     patch({ phase: 'idle' })
     busyRef.current = false
-  }, [opening, patch, pushTurn, say])
+  }, [opening, openingLines, patch, pushTurn, say])
 
   /**
    * 生徒の発話を受けて、返事をする。
@@ -164,9 +213,14 @@ export function useChatTurn({
       pushTurn({ who: 'student', text: transcript, at: studentDoneAt })
       patch({ phase: 'thinking', interim: '', notice: '' })
 
-      // 決めた回数を話したら、この返事でいったん締める
+      // この発言が、このセット（コーチングタイムでは進行表）の何回目か
+      const studentTurnIndex = setTurnsRef.current
       setTurnsRef.current += 1
-      const closing = turnsPerSet > 0 && setTurnsRef.current >= turnsPerSet
+      const plan: TurnPlan = planTurn
+        ? planTurn(studentTurnIndex)
+        : // 雑談は、決めた回数を話したらいったん締めるだけ
+          { closing: turnsPerSet > 0 && setTurnsRef.current >= turnsPerSet }
+      const closing = plan.closing
 
       const abort = new AbortController()
       abortRef.current = abort
@@ -200,6 +254,8 @@ export function useChatTurn({
           filler: pick.text,
           scene: pick.scene,
           closing,
+          topic: plan.topic ?? null,
+          style: plan.style ?? null,
         })
         .finally(() => {
           replyDone = true
@@ -278,10 +334,31 @@ export function useChatTurn({
       metrics.ttsMs = spoken.ttsMs
       metrics.ttsPrebuilt = spoken.prebuilt
 
+      // 受けとめたあとに、決まった文言（次の質問・締めの言葉）を続けて言う。
+      // AI に作らせないので、毎回同じ言い方になり、音声も先に作っておける
+      if (plan.nextPrompt && !abort.signal.aborted) {
+        pushTurn({ who: 'ai', text: plan.nextPrompt, at: Date.now() })
+        await say(plan.nextPrompt)
+      }
+
+      // 答えが 1 つ取れた。記録する側に渡す
+      onAnswer?.({ topicId: plan.topicId ?? null, transcript, at: studentDoneAt })
+
       if (closing) setTurnsRef.current = 0
       patch({ phase: closing ? 'finished' : 'idle', metrics: { ...metrics } })
     },
-    [fillerEnabled, isFillerReady, patch, pushTurn, replySource, say, studentName, turnsPerSet],
+    [
+      fillerEnabled,
+      isFillerReady,
+      onAnswer,
+      patch,
+      planTurn,
+      pushTurn,
+      replySource,
+      say,
+      studentName,
+      turnsPerSet,
+    ],
   )
 
   /** マイクのボタン。押すたびに「開く」と「送る」が入れ替わる */

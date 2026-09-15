@@ -75,6 +75,19 @@ describe('buildMessages', () => {
     expect(String(messages[messages.length - 1]?.content)).toContain('いったん会話を終わります')
   })
 
+  it('コーチングタイムでは、話題と返し方の決め打ちが効く', () => {
+    const messages = buildMessages({
+      turns: [ai('今週の計画は、どれくらい実行できた？'), student('8割くらい')],
+      mode: 'coaching',
+      topic: '今週の計画は、どれくらい実行できた？',
+      style: 'echo',
+    })
+    const last = String(messages[messages.length - 1]?.content)
+    expect(last).toContain('いま聞いているのは「今週の計画は、どれくらい実行できた？」です')
+    // 受けとめるだけにして、次の質問はアプリ側が決まった文言で読み上げる
+    expect(last).toContain('質問をしないでください')
+  })
+
   it('生徒とアバターが交互に並ぶ', () => {
     const messages = buildMessages({
       turns: [ai('こんにちは。'), student('部活'), ai('へえ、どうだった？'), student('勝った')],

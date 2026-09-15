@@ -31,6 +31,17 @@ export interface RespondOptions {
    * true だと、話を広げずに「またね」で終える返事になる
    */
   closing?: boolean
+  /**
+   * いま聞いている話題（コーチングタイムの質問）。
+   * 渡すと、その話題から離れない返事になる
+   */
+  topic?: string | null
+  /**
+   * 返し方を決め打ちにする。
+   * 'echo' だと質問をせず受けとめるだけになる。
+   * 次の質問をこちらが決まった文言で言うときに使う
+   */
+  style?: 'echo' | null
 }
 
 export interface ReplySource {

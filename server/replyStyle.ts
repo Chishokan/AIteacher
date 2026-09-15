@@ -40,9 +40,17 @@ export interface ReplyStyleInput {
    * 何回で 1 セットにするかは、会話を進めているブラウザ側が決める
    */
   closing?: boolean
+  /**
+   * 返し方の決め打ち。
+   * コーチングタイムでは、話題の最後を受けとめだけにして、
+   * 次の質問を決まった文言で読み上げるために使う
+   */
+  forced?: ReplyStyle | null
 }
 
-export function chooseReplyStyle({ aiTurns, scene, closing }: ReplyStyleInput): ReplyStyle {
+export function chooseReplyStyle({ aiTurns, scene, closing, forced }: ReplyStyleInput): ReplyStyle {
+  // 決め打ちがあれば、それに従う。進行を持っている側の指図が最優先
+  if (forced) return forced
   // セットの最後は、聞かれていても締めにまわす
   // （聞かれたことには、締めの言葉の中で答えさせる）
   if (closing) return 'closing'

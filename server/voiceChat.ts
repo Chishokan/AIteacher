@@ -1,5 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { CONVERSATION_OPENER, REFUSAL_REPLY, buildSystemPrompt, turnInstruction } from './prompts'
+import {
+  CONVERSATION_OPENER,
+  REFUSAL_REPLY,
+  buildCoachingPrompt,
+  buildSystemPrompt,
+  turnInstruction,
+} from './prompts'
 import { toPersona, type ChatPersona } from './persona'
 import { chooseReplyStyle } from './replyStyle'
 
@@ -26,6 +32,12 @@ export interface VoiceChatRequest {
   scene?: string | null
   /** このやりとりで 1 セットを締めくくるか。何回で 1 セットかはブラウザ側が決める */
   closing?: boolean
+  /** 雑談か、コーチングタイムか。指示文が変わる */
+  mode?: 'chat' | 'coaching'
+  /** いま聞いている話題（コーチングタイムの質問） */
+  topic?: string | null
+  /** 返し方の決め打ち。'echo' だと質問をせず受けとめるだけになる */
+  style?: 'echo' | null
   /** アバターのキャラクター設定。省略すると既定のキャラクターになる */
   persona?: ChatPersona
 }
@@ -56,6 +68,9 @@ function parseRequest(body: unknown): VoiceChatRequest | null {
     filler,
     scene,
     closing: raw.closing === true,
+    mode: raw.mode === 'coaching' ? 'coaching' : 'chat',
+    topic: typeof raw.topic === 'string' && raw.topic ? raw.topic : null,
+    style: raw.style === 'echo' ? 'echo' : null,
     persona: toPersona(raw.persona),
   }
 }
@@ -78,12 +93,14 @@ export function buildMessages(request: VoiceChatRequest): Anthropic.MessageParam
     aiTurns: request.turns.filter((turn) => turn.who === 'ai').length,
     scene: request.scene,
     closing: request.closing,
+    forced: request.style,
   })
 
   // このターンの注意は、最後の生徒の発言に足す
   const last = messages[messages.length - 1]
   if (last && last.role === 'user' && typeof last.content === 'string') {
-    last.content = `${last.content}\n\n${turnInstruction(request.filler ?? null, style)}`
+    const note = turnInstruction(request.filler ?? null, style, request.topic)
+    last.content = `${last.content}\n\n${note}`
   }
   return messages
 }
@@ -171,7 +188,10 @@ export async function handleVoiceChat(body: unknown, apiKey: string | undefined)
       max_tokens: 1024,
       // 短い相槌に深く考える必要はない。thinking は送らない（Sonnet 5 では adaptive）
       output_config: { effort: 'low' },
-      system: buildSystemPrompt(request.persona),
+      system:
+        request.mode === 'coaching'
+          ? buildCoachingPrompt(request.persona)
+          : buildSystemPrompt(request.persona),
       messages: buildMessages(request),
     })
 

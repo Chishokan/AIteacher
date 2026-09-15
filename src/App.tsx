@@ -5,6 +5,7 @@ import { ResultScreen } from './components/ResultScreen'
 import { SettingsScreen } from './components/SettingsScreen'
 import { HistoryScreen } from './components/HistoryScreen'
 import { ChatScreen } from './components/ChatScreen'
+import { CoachingScreen } from './components/CoachingScreen'
 import { buildScenario } from './data/scenario'
 import { useInterview } from './hooks/useInterview'
 import { loadSessions, loadSettings, saveSession, saveSettings, deleteSession } from './logic/storage'
@@ -15,7 +16,7 @@ import { unlockAudio } from './speech/clips'
 import { unlockAudioContext } from './chat/audioPlayer'
 import { requestMicrophone, type MicStatus } from './speech/mic'
 
-type Screen = 'start' | 'interview' | 'result' | 'settings' | 'history' | 'chat'
+type Screen = 'start' | 'interview' | 'result' | 'settings' | 'history' | 'chat' | 'coaching'
 
 export function App() {
   const [screen, setScreen] = useState<Screen>('start')
@@ -90,7 +91,7 @@ export function App() {
    * 雑談を開く。聞き取りとは別の機能なので、進行も画面も共有しない。
    * マイクの許可だけは、ここでも押した直後に取っておく
    */
-  const openChat = useCallback(async (name: string) => {
+  const openTalk = useCallback(async (name: string, next: 'chat' | 'coaching') => {
     unlockSpeechSynthesis()
     unlockAudio()
     // Safari はタップから時間がたってからの再生を止めるため、ここで用意しておく
@@ -98,9 +99,9 @@ export function App() {
     setPreparingMic(true)
     setMicStatus(await requestMicrophone())
     setPreparingMic(false)
-    // 名前は、つなぎ言葉の「{名前}」に差し込むのに使う（入っていなければ使わない）
+    // 名前は、つなぎ言葉の「{名前}」と、コーチングタイムの記録に使う
     setChatStudentName(name)
-    setScreen('chat')
+    setScreen(next)
   }, [])
 
   const stopInterview = useCallback(() => {
@@ -127,7 +128,10 @@ export function App() {
           onStart={(name) => void begin(name)}
           onOpenSettings={() => setScreen('settings')}
           onOpenHistory={() => setScreen('history')}
-          onOpenChat={settings.chatEnabled ? (name) => void openChat(name) : undefined}
+          onOpenChat={settings.chatEnabled ? (name) => void openTalk(name, 'chat') : undefined}
+          onOpenCoaching={
+            settings.coachingEnabled ? (name) => void openTalk(name, 'coaching') : undefined
+          }
         />
       )}
 
@@ -155,6 +159,16 @@ export function App() {
 
       {screen === 'chat' && (
         <ChatScreen
+          avatarId={settings.avatarId}
+          micStatus={micStatus}
+          settings={settings}
+          studentName={chatStudentName}
+          onClose={() => setScreen('start')}
+        />
+      )}
+
+      {screen === 'coaching' && (
+        <CoachingScreen
           avatarId={settings.avatarId}
           micStatus={micStatus}
           settings={settings}

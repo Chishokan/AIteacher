@@ -16,6 +16,8 @@ interface StartScreenProps {
   onOpenHistory: () => void
   /** 雑談メニュー。設定で切っているときは渡されない。名前はつなぎ言葉に使う */
   onOpenChat?: (studentName: string) => void
+  /** コーチングタイムの聞き取り。設定で切っているときは渡されない */
+  onOpenCoaching?: (studentName: string) => void
 }
 
 export function StartScreen({
@@ -26,6 +28,7 @@ export function StartScreen({
   onOpenSettings,
   onOpenHistory,
   onOpenChat,
+  onOpenCoaching,
 }: StartScreenProps) {
   const [name, setName] = useState('')
   const [micStatus, setMicStatus] = useState<MicStatus>('unsupported')
@@ -119,6 +122,17 @@ export function StartScreen({
           <p className="muted" style={{ fontSize: 15 }}>
             画面に出た確認で「許可」を選んでください。許可すると面談が始まります。
           </p>
+        )}
+
+        {onOpenCoaching && (
+          <button
+            type="button"
+            className="btn btn--block"
+            disabled={preparingMic}
+            onClick={() => onOpenCoaching(name)}
+          >
+            📋 コーチングタイムの聞き取り
+          </button>
         )}
 
         {onOpenChat && (

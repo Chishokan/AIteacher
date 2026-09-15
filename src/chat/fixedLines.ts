@@ -1,4 +1,5 @@
 import { allFillerLines } from './fillers'
+import { DEFAULT_AGENDA, agendaLines } from '../coaching/agenda'
 
 /**
  * 雑談のうち、**毎回まったく同じ文言**になるもの。
@@ -9,6 +10,9 @@ import { allFillerLines } from './fillers'
  *
  * つなぎ言葉（引き継ぎ仕様 3.2）は**用意できているものしか使わない**決まりなので、
  * ここに載せて先に作っておかないと、いつまでも鳴らない。
+ *
+ * コーチングタイムの質問も毎回同じ文言なので、ここに含めてある。
+ * こちらは無くても鳴る（その場で作る）が、待たされる。
  */
 
 export interface FixedLine {
@@ -51,6 +55,7 @@ export function fixedLines({ opening, studentName }: FixedLineOptions): FixedLin
 
   add('opening', opening, '雑談の最初のひとこと')
   add('retry-notice', RETRY_NOTICE, '聞き返しの案内（いまは画面に出すだけ）')
+  for (const line of agendaLines(DEFAULT_AGENDA)) add(line.id, line.text, line.note)
   for (const filler of allFillerLines(studentName)) {
     add(filler.id, filler.text, `つなぎ言葉（${filler.scene}）`)
   }

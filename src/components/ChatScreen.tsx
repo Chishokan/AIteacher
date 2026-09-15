@@ -1,15 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Avatar } from './Avatar'
+import { useEffect, useMemo } from 'react'
+import { MicButton, TalkMetrics, TalkStage } from './TalkStage'
 import { useChatTurn } from '../chat/useChatTurn'
 import { createApiReplySource } from '../chat/apiReplySource'
 import { createDummyReplySource } from '../chat/reply'
-import { createAivisVoice, createBrowserVoice } from '../chat/voice'
+import { useChatVoice } from '../chat/useChatVoice'
 import type { Settings } from '../logic/settings'
-import type { AvatarMood } from '../types'
 import type { ChatPhase } from '../chat/types'
 import { MIC_MESSAGES, type MicStatus } from '../speech/mic'
-import { allFillerLines } from '../chat/fillers'
-import { readyTexts } from '../chat/prebuiltClips'
 
 interface ChatScreenProps {
   avatarId: string
@@ -20,27 +17,11 @@ interface ChatScreenProps {
   onClose: () => void
 }
 
-const MOOD: Record<ChatPhase, AvatarMood> = {
-  idle: 'idle',
-  recording: 'listening',
-  thinking: 'thinking',
-  speaking: 'speaking',
-  finished: 'happy',
-}
-
 const STATUS: Record<ChatPhase, string> = {
   idle: 'あなたの番です',
   recording: '聞いています',
   thinking: '考えています',
   speaking: '話しています',
-  finished: 'おしまい',
-}
-
-const MIC_LABEL: Record<ChatPhase, string> = {
-  idle: '🎤 押して話す',
-  recording: '⏹ 話し終わったら押す',
-  thinking: '考えています…',
-  speaking: '話しています…',
   finished: 'おしまい',
 }
 
@@ -56,78 +37,7 @@ export function ChatScreen({
     [settings.chatUseApi],
   )
 
-  const browserVoice = useMemo(
-    () => createBrowserVoice(settings.rate, settings.pitch, settings.voiceURI),
-    [settings.pitch, settings.rate, settings.voiceURI],
-  )
-
-  const voice = useMemo(() => {
-    if (settings.chatVoiceMode === 'browser') return browserVoice
-    return createAivisVoice({
-      speaker: settings.chatVoiceSpeaker,
-      style: settings.chatVoiceStyle,
-      speedScale: settings.chatSpeedScale,
-      pitchScale: settings.chatPitchScale,
-      intonationScale: settings.chatIntonationScale,
-      tempoDynamicsScale: settings.chatTempoDynamicsScale,
-    })
-  }, [
-    browserVoice,
-    settings.chatVoiceMode,
-    settings.chatVoiceSpeaker,
-    settings.chatVoiceStyle,
-    settings.chatSpeedScale,
-    settings.chatPitchScale,
-    settings.chatIntonationScale,
-    settings.chatTempoDynamicsScale,
-  ])
-
-  /**
-   * つなぎ言葉のうち、いま鳴らせるもの。
-   *
-   * その場で作ると逆に遅くなるので、**先に作ってあるものしか使わない**
-   * （引き継ぎ仕様 3.2 の 6）。ただしブラウザの読み上げは待ち時間がないので、
-   * そのときは全部使ってよい。
-   */
-  const [readyFillers, setReadyFillers] = useState<Set<string> | null>(null)
-  const usingBrowserVoice = settings.chatVoiceMode === 'browser'
-
-  useEffect(() => {
-    if (usingBrowserVoice) {
-      setReadyFillers(null)
-      return
-    }
-    let active = true
-    const texts = allFillerLines(studentName).map((line) => line.text)
-    void readyTexts(texts, {
-      speaker: settings.chatVoiceSpeaker,
-      style: settings.chatVoiceStyle,
-      speedScale: settings.chatSpeedScale,
-      pitchScale: settings.chatPitchScale,
-      intonationScale: settings.chatIntonationScale,
-      tempoDynamicsScale: settings.chatTempoDynamicsScale,
-    }).then((ready) => {
-      if (active) setReadyFillers(ready)
-    })
-    return () => {
-      active = false
-    }
-  }, [
-    studentName,
-    usingBrowserVoice,
-    settings.chatVoiceSpeaker,
-    settings.chatVoiceStyle,
-    settings.chatSpeedScale,
-    settings.chatPitchScale,
-    settings.chatIntonationScale,
-    settings.chatTempoDynamicsScale,
-  ])
-
-  const isFillerReady = useMemo(() => {
-    if (usingBrowserVoice) return () => true
-    const ready = readyFillers
-    return (text: string) => ready?.has(text) ?? false
-  }, [readyFillers, usingBrowserVoice])
+  const { voice, browserVoice, isFillerReady } = useChatVoice(settings, studentName)
 
   const { state, actions } = useChatTurn({
     opening: settings.chatOpening,
@@ -174,30 +84,13 @@ export function ChatScreen({
         </button>
       </div>
 
-      <div className="chat__stage">
-        <div className="chat__avatar">
-          <Avatar mood={MOOD[state.phase]} presetId={avatarId} />
-          <span
-            className={`stage__status${state.phase === 'recording' ? ' stage__status--listening' : ''}`}
-          >
-            {state.phase === 'recording' ? '🎤 ' : ''}
-            {STATUS[state.phase]}
-          </span>
-        </div>
-
-        <div className="chat__log" aria-live="polite">
-          {state.turns.map((turn) => (
-            <p key={`${turn.at}-${turn.who}`} className={`bubble bubble--${turn.who}`}>
-              {turn.text}
-            </p>
-          ))}
-          {state.phase === 'recording' && (
-            <p className="bubble bubble--student bubble--listening">
-              {state.interim || '聞いています…'}
-            </p>
-          )}
-        </div>
-      </div>
+      <TalkStage
+        avatarId={avatarId}
+        phase={state.phase}
+        status={STATUS[state.phase]}
+        turns={state.turns}
+        interim={state.interim}
+      />
 
       <div className="chat__controls">
         {micWarning && <p className="banner banner--danger">{MIC_MESSAGES[micStatus]}</p>}
@@ -217,50 +110,10 @@ export function ChatScreen({
             </div>
           </div>
         ) : (
-          <button
-            type="button"
-            className={`mic-button${state.phase === 'recording' ? ' mic-button--recording' : ''}`}
-            disabled={micDisabled}
-            onClick={actions.pressMic}
-          >
-            {MIC_LABEL[state.phase]}
-          </button>
+          <MicButton phase={state.phase} disabled={micDisabled} onPress={actions.pressMic} />
         )}
 
-        {state.metrics && (
-          <dl className="metrics">
-            <div>
-              <dt>最初の声まで</dt>
-              <dd>{state.metrics.firstVoiceMs ?? '—'} ms</dd>
-            </div>
-            <div>
-              <dt>つなぎ</dt>
-              <dd>
-                {state.metrics.fillerCount} 回
-                {state.metrics.fillerSkipReason
-                  ? `（${state.metrics.fillerSkipReason}）`
-                  : state.metrics.fillerScene
-                    ? `（${state.metrics.fillerScene}）`
-                    : ''}
-              </dd>
-            </div>
-            <div>
-              <dt>途中の沈黙</dt>
-              <dd>{state.metrics.gapMs ?? '—'} ms</dd>
-            </div>
-            <div>
-              <dt>考える</dt>
-              <dd>{state.metrics.thinkMs ?? '—'} ms</dd>
-            </div>
-            <div>
-              <dt>声を作る</dt>
-              <dd>
-                {state.metrics.ttsMs ?? '—'} ms
-                {state.metrics.ttsPrebuilt ? '（用意ずみ）' : ''}
-              </dd>
-            </div>
-          </dl>
-        )}
+        {state.metrics && <TalkMetrics metrics={state.metrics} />}
       </div>
     </div>
   )

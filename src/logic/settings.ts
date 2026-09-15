@@ -30,6 +30,8 @@ export interface Settings {
   // ---- 雑談（定期テストの聞き取りとは独立した機能） ----
   /** 雑談メニューを使えるようにする */
   chatEnabled: boolean
+  /** コーチングタイムの聞き取りを使えるようにする（東進高校生部門） */
+  coachingEnabled: boolean
   /** 雑談の最初のひとこと */
   chatOpening: string
   /** 返事をサーバー（Claude）に作ってもらう。切るとダミーの固定文で動作だけ試せる */
@@ -70,6 +72,7 @@ export const defaultSettings: Settings = {
   includeGoal: false,
 
   chatEnabled: true,
+  coachingEnabled: true,
   // 声まわりの初期値は src/chat/voiceDefaults.ts に置いてある。
   // 事前生成のスクリプトが Node から同じ値を読めるようにするため
   chatOpening: DEFAULT_CHAT_OPENING,

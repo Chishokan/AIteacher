@@ -63,7 +63,10 @@ ${SPEAKABLE_RULES}
  * 受けとめのあとに決まった言い方で読み上げる（`src/coaching/agenda.ts`）。
  * ここで AI にさせるのは「受けとめ」と、その話題の中の短い深掘りだけ。
  */
-export function buildCoachingPrompt(persona: ChatPersona = DEFAULT_PERSONA): string {
+export function buildCoachingPrompt(
+  persona: ChatPersona = DEFAULT_PERSONA,
+  facts: string[] = [],
+): string {
   return `あなたは学習塾で、生徒（高校生）のコーチングタイムの聞き役をする「${persona.name}」です。
 決まった項目を順番に聞いていきます。**次の質問はこちらが用意する**ので、あなたは
 生徒の答えを受けとめることと、いまの話題の中で短く掘り下げることだけをしてください。
@@ -87,7 +90,27 @@ ${SPEAKABLE_RULES}
 
 返事の例:
 - 受けとめる回: 「そっかー、よくがんばったねー。」
-- 掘り下げる回: 「どのあたりが進まなかったの？」`
+- 掘り下げる回: 「どのあたりが進まなかったの？」${rosterNote(facts)}`
+}
+
+/**
+ * 名簿から分かっている事実を、指示文に足す。
+ *
+ * **ここに書いてあること以外は言わせない。** 名簿が古いこともあるので、
+ * 決めつけずに確かめる言い方をさせる。
+ */
+export function rosterNote(facts: string[]): string {
+  if (facts.length === 0) return ''
+  return `
+
+この生徒について、校舎の名簿で分かっていること:
+${facts.map((fact) => `- ${fact}`).join('\n')}
+
+名簿の使い方:
+- 話の流れに関わるときだけ、さらっと触れてよい。毎回持ち出さない。
+- **決めつけない。** 「◯◯だったよね？」と確かめる言い方にする。名簿が古いこともある。
+- ここに書いていないことは言わない。推測で補わない。
+- 志望校や成績を引き合いに出して、励ましたり急かしたりしない。`
 }
 
 /** 会話のいちばん最初に置く、生徒側の見えない一言 */

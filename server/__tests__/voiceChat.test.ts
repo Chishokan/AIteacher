@@ -1,9 +1,40 @@
 import { describe, expect, it } from 'vitest'
-import { buildMessages } from '../voiceChat'
+import { buildMessages, parseRequest } from '../voiceChat'
 import { CONVERSATION_OPENER } from '../prompts'
 
 const student = (text: string) => ({ who: 'student' as const, text })
 const ai = (text: string) => ({ who: 'ai' as const, text })
+
+describe('parseRequest', () => {
+  const turns = [{ who: 'ai', text: 'こんにちは。' }]
+
+  it('名簿の事実は、多すぎないところで打ち切る', () => {
+    // 会話に混ざりすぎないよう、サーバー側でも上限を持つ
+    const facts = Array.from({ length: 30 }, (_, i) => `事実${i}`)
+    expect(parseRequest({ turns, facts })?.facts).toHaveLength(12)
+  })
+
+  it('文字列でない事実は捨てる', () => {
+    expect(parseRequest({ turns, facts: ['よい', 123, null, ''] })?.facts).toEqual(['よい'])
+  })
+
+  it('知らない mode は雑談として扱う', () => {
+    expect(parseRequest({ turns, mode: 'coaching' })?.mode).toBe('coaching')
+    expect(parseRequest({ turns, mode: 'なにか' })?.mode).toBe('chat')
+    expect(parseRequest({ turns })?.mode).toBe('chat')
+  })
+
+  it('知らない style は決め打ちなしにする', () => {
+    expect(parseRequest({ turns, style: 'echo' })?.style).toBe('echo')
+    expect(parseRequest({ turns, style: 'question' })?.style).toBeNull()
+  })
+
+  it('会話が入っていなければ受け取らない', () => {
+    expect(parseRequest({})).toBeNull()
+    expect(parseRequest({ turns: 'こわれている' })).toBeNull()
+    expect(parseRequest(null)).toBeNull()
+  })
+})
 
 describe('buildMessages', () => {
   it('アバターの最初のひとことの前に、見えない一言を置く', () => {

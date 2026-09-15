@@ -8,6 +8,10 @@ import { DEFAULT_AGENDA, totalTurns } from '../coaching/agenda'
 import { planAt, stepAt } from '../coaching/plan'
 import { buildRecord, csvFileName, recordToCSV, type CoachingRecord } from '../coaching/record'
 import { saveCoachingRecord } from '../coaching/storage'
+import { createStudentSource } from '../students/source'
+import { findStudent, formatDate } from '../students/match'
+import { studentFacts } from '../students/facts'
+import type { Student } from '../students/types'
 import { downloadText } from '../logic/interview'
 import type { Settings } from '../logic/settings'
 import type { ChatPhase } from '../chat/types'
@@ -60,6 +64,39 @@ export function CoachingScreen({
   const [answered, setAnswered] = useState(0)
   const [record, setRecord] = useState<CoachingRecord | null>(null)
 
+  /**
+   * 名簿から引き当てた生徒。
+   * 見つからなければ null のまま。**名簿が無くても聞き取りは進む。**
+   */
+  const [student, setStudent] = useState<Student | null>(null)
+  const [rosterNotice, setRosterNotice] = useState('')
+  const studentRef = useRef<Student | null>(null)
+
+  useEffect(() => {
+    if (!studentName?.trim()) {
+      setRosterNotice('名前が入っていないので、名簿とは照らし合わせません。')
+      return
+    }
+    let active = true
+    void createStudentSource(settings.studentSource).load().then((result) => {
+      if (!active) return
+      if (!result.ok) {
+        // 名簿が読めなくても聞き取りは続ける。理由だけ出す
+        setRosterNotice(result.kind === 'unconfigured' ? '' : result.message)
+        return
+      }
+      const found = findStudent(result.students, studentName)
+      studentRef.current = found
+      setStudent(found)
+      setRosterNotice(found ? '' : `名簿に「${studentName}」が見つかりませんでした。`)
+    })
+    return () => {
+      active = false
+    }
+  }, [settings.studentSource, studentName])
+
+  const facts = useMemo(() => studentFacts(student), [student])
+
   const planTurn = useCallback((index: number) => planAt(agenda, index), [agenda])
 
   const onAnswer = useCallback(({ topicId, transcript }: AnsweredTurn) => {
@@ -85,6 +122,7 @@ export function CoachingScreen({
     studentName,
     planTurn,
     onAnswer,
+    facts,
   })
 
   useEffect(() => {
@@ -102,12 +140,17 @@ export function CoachingScreen({
   // 話し終わったら、記録を組み立てて 1 度だけ保存する
   useEffect(() => {
     if (state.phase !== 'finished' || record) return
-    const built = buildRecord(agenda, answersRef.current, {
-      id: `coaching-${Date.now()}`,
-      studentName: studentName ?? '',
-      startedAt: startedAtRef.current,
-      finishedAt: new Date().toISOString(),
-    })
+    const built = buildRecord(
+      agenda,
+      answersRef.current,
+      {
+        id: `coaching-${Date.now()}`,
+        studentName: studentName ?? '',
+        startedAt: startedAtRef.current,
+        finishedAt: new Date().toISOString(),
+      },
+      studentRef.current,
+    )
     setRecord(built)
     saveCoachingRecord(built)
   }, [agenda, record, state.phase, studentName])
@@ -137,6 +180,23 @@ export function CoachingScreen({
         <CoachingResult record={record} onClose={onClose} />
       ) : (
         <>
+          {student && (
+            <div className="coach__student">
+              {student.attendance && (
+                <span className="coach__student-tag">来校 {student.attendance}</span>
+              )}
+              {student.nextVisit && (
+                <span className="coach__student-tag">次回 {formatDate(student.nextVisit)}</span>
+              )}
+              {student.school && <span className="coach__student-tag">{student.school}</span>}
+              {student.progress.map((p) => (
+                <span key={p.course} className="coach__student-tag">
+                  {p.course} {p.done ?? '?'}/{p.total ?? '?'}
+                </span>
+              ))}
+            </div>
+          )}
+
           <div className="coach__progress">
             <span className="coach__progress-step">
               {Math.min(step.topicIndex + 1, agenda.topics.length)} / {agenda.topics.length}
@@ -157,6 +217,7 @@ export function CoachingScreen({
 
           <div className="chat__controls">
             {micWarning && <p className="banner banner--danger">{MIC_MESSAGES[micStatus]}</p>}
+            {rosterNotice && !micWarning && <p className="banner banner--warn">{rosterNotice}</p>}
             {state.fatal && <p className="banner banner--danger">{state.fatal}</p>}
             {state.notice && !micWarning && <p className="banner banner--warn">{state.notice}</p>}
 
@@ -184,6 +245,35 @@ function CoachingResult({ record, onClose }: { record: CoachingRecord; onClose: 
         <div className="coach__rate">
           <span className="coach__rate-label">今週の計画実行率</span>
           <span className="coach__rate-value">{rate}%</span>
+        </div>
+      )}
+
+      {record.roster && (
+        <div className="coach__student">
+          {record.roster.attendance && (
+            <span className="coach__student-tag">来校 {record.roster.attendance}</span>
+          )}
+          {record.roster.nextVisit && (
+            <span className="coach__student-tag">
+              名簿の次回来校 {formatDate(record.roster.nextVisit)}
+            </span>
+          )}
+          {record.roster.school && (
+            <span className="coach__student-tag">{record.roster.school}</span>
+          )}
+          {record.roster.slowest && (
+            <span className="coach__student-tag">遅れ気味 {record.roster.slowest}</span>
+          )}
+          {record.roster.matchedCourses.length > 0 && (
+            <span className="coach__student-tag">
+              今日の講座 {record.roster.matchedCourses.join('、')}（取得講座と一致）
+            </span>
+          )}
+          {record.roster.courseUnmatched && (
+            <span className="coach__student-tag coach__student-tag--warn">
+              今日の講座が取得講座に当たりません
+            </span>
+          )}
         </div>
       )}
 

@@ -24,7 +24,7 @@ export function createApiReplySource(mode: ChatMode = 'chat'): ReplySource {
   return {
     async respond(
       history: ChatTurn[],
-      { signal, filler, scene, closing, topic, style } = {},
+      { signal, filler, scene, closing, topic, style, facts } = {},
     ): Promise<ReplyResult> {
       let response: Response
       try {
@@ -43,6 +43,8 @@ export function createApiReplySource(mode: ChatMode = 'chat'): ReplySource {
             mode,
             topic: topic ?? null,
             style: style ?? null,
+            // 名簿から分かっていること。ここに無いことは言わせない
+            facts: facts ?? [],
           }),
           signal,
         })

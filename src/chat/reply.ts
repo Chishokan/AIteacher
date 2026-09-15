@@ -42,6 +42,11 @@ export interface RespondOptions {
    * 次の質問をこちらが決まった文言で言うときに使う
    */
   style?: 'echo' | null
+  /**
+   * 名簿から分かっている事実。
+   * アバターはここに書いたことにしか触れない
+   */
+  facts?: string[]
 }
 
 export interface ReplySource {

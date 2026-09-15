@@ -32,6 +32,8 @@ export interface Settings {
   chatEnabled: boolean
   /** コーチングタイムの聞き取りを使えるようにする（東進高校生部門） */
   coachingEnabled: boolean
+  /** 生徒名簿の出どころ。'local' は端末に取り込んだもの、'server' は Supabase */
+  studentSource: 'local' | 'server'
   /** 雑談の最初のひとこと */
   chatOpening: string
   /** 返事をサーバー（Claude）に作ってもらう。切るとダミーの固定文で動作だけ試せる */
@@ -73,6 +75,7 @@ export const defaultSettings: Settings = {
 
   chatEnabled: true,
   coachingEnabled: true,
+  studentSource: 'local',
   // 声まわりの初期値は src/chat/voiceDefaults.ts に置いてある。
   // 事前生成のスクリプトが Node から同じ値を読めるようにするため
   chatOpening: DEFAULT_CHAT_OPENING,

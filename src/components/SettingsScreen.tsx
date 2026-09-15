@@ -58,6 +58,26 @@ export function SettingsScreen({ settings, onChange, onClose }: SettingsScreenPr
           </span>
         </label>
 
+        {settings.coachingEnabled && (
+          <label className="field" style={{ marginTop: 14 }}>
+            <span>生徒名簿の出どころ</span>
+            <select
+              className="select"
+              value={settings.studentSource}
+              onChange={(event) =>
+                patch({ studentSource: event.target.value === 'server' ? 'server' : 'local' })
+              }
+            >
+              <option value="local">この端末に取り込んだ名簿</option>
+              <option value="server">Supabase（サーバー経由）</option>
+            </select>
+            <span className="field__note">
+              最初の画面の「生徒名簿」から取り込みます。Supabase を使うときは
+              .env.local に SUPABASE_URL と SUPABASE_KEY を書いてください
+            </span>
+          </label>
+        )}
+
         <label className="toggle" style={{ marginTop: 10 }}>
           <input
             type="checkbox"

@@ -104,6 +104,11 @@ export interface UseChatTurnOptions {
   planTurn?: (studentTurnIndex: number) => TurnPlan
   /** 生徒が 1 回答え終わるたびに呼ばれる。記録を取るために使う */
   onAnswer?: (answer: AnsweredTurn) => void
+  /**
+   * 名簿から分かっている事実。返事を作るときに渡す。
+   * アバターはここに書いたことにしか触れない
+   */
+  facts?: string[]
 }
 
 /** つなぎ言葉を言い終えても返事ができていないとき、2 段目までこれだけ待つ */
@@ -133,6 +138,7 @@ export function useChatTurn({
   turnsPerSet = 5,
   planTurn,
   onAnswer,
+  facts,
 }: UseChatTurnOptions) {
   const [state, setState] = useState<ChatState>(INITIAL)
 
@@ -256,6 +262,7 @@ export function useChatTurn({
           closing,
           topic: plan.topic ?? null,
           style: plan.style ?? null,
+          facts,
         })
         .finally(() => {
           replyDone = true
@@ -348,6 +355,7 @@ export function useChatTurn({
       patch({ phase: closing ? 'finished' : 'idle', metrics: { ...metrics } })
     },
     [
+      facts,
       fillerEnabled,
       isFillerReady,
       onAnswer,

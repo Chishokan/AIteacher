@@ -15,6 +15,12 @@ export default defineConfig(({ mode }) => {
         apiKey: env.ANTHROPIC_API_KEY,
         // PC で動かしている AivisSpeech。別のポートなら .env.local で変える
         engineUrl: env.AIVIS_ENGINE_URL || DEFAULT_ENGINE_URL,
+        // 生徒名簿を Supabase から読む場合だけ。鍵はここから先に出ない
+        supabase: {
+          url: env.SUPABASE_URL,
+          key: env.SUPABASE_KEY,
+          table: env.SUPABASE_STUDENTS_TABLE,
+        },
       }),
     ],
     base: './',

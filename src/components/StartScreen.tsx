@@ -18,6 +18,8 @@ interface StartScreenProps {
   onOpenChat?: (studentName: string) => void
   /** コーチングタイムの聞き取り。設定で切っているときは渡されない */
   onOpenCoaching?: (studentName: string) => void
+  /** 生徒名簿の取り込み */
+  onOpenRoster: () => void
 }
 
 export function StartScreen({
@@ -29,6 +31,7 @@ export function StartScreen({
   onOpenHistory,
   onOpenChat,
   onOpenCoaching,
+  onOpenRoster,
 }: StartScreenProps) {
   const [name, setName] = useState('')
   const [micStatus, setMicStatus] = useState<MicStatus>('unsupported')
@@ -152,6 +155,9 @@ export function StartScreen({
           </button>
           <button type="button" className="btn" onClick={onOpenHistory}>
             これまでの記録
+          </button>
+          <button type="button" className="btn" onClick={onOpenRoster}>
+            生徒名簿
           </button>
         </div>
       </div>

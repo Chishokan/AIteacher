@@ -57,6 +57,20 @@ describe('buildCoachingPrompt', () => {
     expect(prompt).toContain('解決策を出そうとしない')
   })
 
+  it('名簿から分かっていることを渡すと、指示文に入る', () => {
+    const prompt = buildCoachingPrompt(undefined, ['取得している講座は 英語長文', '志望校は 東京大学'])
+    expect(prompt).toContain('校舎の名簿で分かっていること')
+    expect(prompt).toContain('取得している講座は 英語長文')
+    // 名簿が古いこともあるので、決めつけさせない
+    expect(prompt).toContain('決めつけない')
+    expect(prompt).toContain('ここに書いていないことは言わない')
+    expect(prompt).toContain('励ましたり急かしたりしない')
+  })
+
+  it('名簿を渡さなければ、その段落ごと出さない', () => {
+    expect(buildCoachingPrompt()).not.toContain('校舎の名簿で分かっていること')
+  })
+
   it('雑談の指示文とは別もの', () => {
     expect(buildCoachingPrompt()).not.toBe(buildSystemPrompt())
   })

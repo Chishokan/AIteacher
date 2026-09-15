@@ -38,6 +38,11 @@ export interface VoiceChatRequest {
   topic?: string | null
   /** 返し方の決め打ち。'echo' だと質問をせず受けとめるだけになる */
   style?: 'echo' | null
+  /**
+   * 名簿から分かっている事実（「取得講座は英語長文、数学I」など）。
+   * ここに書いたことしか言わせない
+   */
+  facts?: string[]
   /** アバターのキャラクター設定。省略すると既定のキャラクターになる */
   persona?: ChatPersona
 }
@@ -57,7 +62,8 @@ function isTurn(value: unknown): value is VoiceChatTurn {
   return (turn.who === 'student' || turn.who === 'ai') && typeof turn.text === 'string'
 }
 
-function parseRequest(body: unknown): VoiceChatRequest | null {
+/** 届いた JSON を、信用できる形にそろえる。壊れていたら null */
+export function parseRequest(body: unknown): VoiceChatRequest | null {
   if (typeof body !== 'object' || body === null) return null
   const raw = body as Record<string, unknown>
   if (!Array.isArray(raw.turns) || !raw.turns.every(isTurn)) return null
@@ -71,6 +77,9 @@ function parseRequest(body: unknown): VoiceChatRequest | null {
     mode: raw.mode === 'coaching' ? 'coaching' : 'chat',
     topic: typeof raw.topic === 'string' && raw.topic ? raw.topic : null,
     style: raw.style === 'echo' ? 'echo' : null,
+    facts: Array.isArray(raw.facts)
+      ? raw.facts.filter((fact): fact is string => typeof fact === 'string' && fact.length > 0).slice(0, 12)
+      : [],
     persona: toPersona(raw.persona),
   }
 }
@@ -190,7 +199,7 @@ export async function handleVoiceChat(body: unknown, apiKey: string | undefined)
       output_config: { effort: 'low' },
       system:
         request.mode === 'coaching'
-          ? buildCoachingPrompt(request.persona)
+          ? buildCoachingPrompt(request.persona, request.facts)
           : buildSystemPrompt(request.persona),
       messages: buildMessages(request),
     })

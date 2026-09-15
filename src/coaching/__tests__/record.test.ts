@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_AGENDA } from '../agenda'
 import { buildRecord, csvFileName, recordToCSV } from '../record'
+import type { Student } from '../../students/types'
 
 const META = {
   id: 'coaching-1',
@@ -9,8 +10,22 @@ const META = {
   finishedAt: '2026-09-15T10:05:00.000Z',
 }
 
-function record(answers: Record<string, string[]>) {
-  return buildRecord(DEFAULT_AGENDA, new Map(Object.entries(answers)), META)
+const STUDENT: Student = {
+  id: '1001',
+  name: '山田 太郎',
+  attendance: '順調',
+  nextVisit: '2026-09-18',
+  courses: ['英語長文', '数学I'],
+  progress: [
+    { course: '英語長文', done: 12, total: 20, raw: '' },
+    { course: '数学I', done: 3, total: 15, raw: '' },
+  ],
+  school: '東京大学',
+  extra: {},
+}
+
+function record(answers: Record<string, string[]>, student?: Student | null) {
+  return buildRecord(DEFAULT_AGENDA, new Map(Object.entries(answers)), META, student)
 }
 
 describe('buildRecord', () => {
@@ -56,6 +71,40 @@ describe('buildRecord', () => {
   })
 })
 
+describe('名簿との照らし合わせ', () => {
+  it('名簿が無ければ、照らし合わせをしない', () => {
+    expect(record({}).roster).toBeNull()
+  })
+
+  it('名簿の来校状況・来校予定日・志望校・講座進捗を控える', () => {
+    const roster = record({}, STUDENT).roster!
+    expect(roster).toMatchObject({
+      studentId: '1001',
+      attendance: '順調',
+      nextVisit: '2026-09-18',
+      school: '東京大学',
+    })
+    expect(roster.progress).toEqual(['英語長文 12/20（60%）', '数学I 3/15（20%）'])
+    expect(roster.slowest).toBe('数学I 3/15（20%）')
+  })
+
+  it('今日の講座の予定を、取得講座と突き合わせる', () => {
+    const roster = record({ 'today-lesson': ['英語長文を2コマ進める'] }, STUDENT).roster!
+    expect(roster.matchedCourses).toEqual(['英語長文'])
+    expect(roster.courseUnmatched).toBe(false)
+  })
+
+  it('取得講座に無い講座を言ったら、印を付ける（間違いとは決めない）', () => {
+    const roster = record({ 'today-lesson': ['物理をやる予定'] }, STUDENT).roster!
+    expect(roster.matchedCourses).toEqual([])
+    expect(roster.courseUnmatched).toBe(true)
+  })
+
+  it('何も話していなければ、食い違いとはしない', () => {
+    expect(record({}, STUDENT).roster!.courseUnmatched).toBe(false)
+  })
+})
+
 describe('recordToCSV', () => {
   it('見出しと 4 項目が並ぶ', () => {
     const csv = recordToCSV(record({ 'plan-rate': ['8割'], worry: ['とくにない'] }))
@@ -65,6 +114,18 @@ describe('recordToCSV', () => {
     expect(csv).toContain('今週の計画実行率')
     expect(csv).toContain('80')
     expect(csv).toContain('とくにない')
+  })
+
+  it('名簿との照らし合わせも書き出す', () => {
+    const csv = recordToCSV(record({ 'today-lesson': ['英語長文を2コマ'] }, STUDENT))
+    expect(csv).toContain('名簿との照らし合わせ')
+    expect(csv).toContain('来校状況,順調')
+    expect(csv).toContain('志望校,東京大学')
+    expect(csv).toContain('取得講座と合っています')
+  })
+
+  it('名簿に見つからなければ、その旨を残す', () => {
+    expect(recordToCSV(record({}))).toContain('名簿に見つかりませんでした')
   })
 
   it('半角カンマが入っていても、列がずれない', () => {

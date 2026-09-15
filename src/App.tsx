@@ -6,6 +6,7 @@ import { SettingsScreen } from './components/SettingsScreen'
 import { HistoryScreen } from './components/HistoryScreen'
 import { ChatScreen } from './components/ChatScreen'
 import { CoachingScreen } from './components/CoachingScreen'
+import { RosterScreen } from './components/RosterScreen'
 import { buildScenario } from './data/scenario'
 import { useInterview } from './hooks/useInterview'
 import { loadSessions, loadSettings, saveSession, saveSettings, deleteSession } from './logic/storage'
@@ -16,7 +17,15 @@ import { unlockAudio } from './speech/clips'
 import { unlockAudioContext } from './chat/audioPlayer'
 import { requestMicrophone, type MicStatus } from './speech/mic'
 
-type Screen = 'start' | 'interview' | 'result' | 'settings' | 'history' | 'chat' | 'coaching'
+type Screen =
+  | 'start'
+  | 'interview'
+  | 'result'
+  | 'settings'
+  | 'history'
+  | 'chat'
+  | 'coaching'
+  | 'roster'
 
 export function App() {
   const [screen, setScreen] = useState<Screen>('start')
@@ -128,6 +137,7 @@ export function App() {
           onStart={(name) => void begin(name)}
           onOpenSettings={() => setScreen('settings')}
           onOpenHistory={() => setScreen('history')}
+          onOpenRoster={() => setScreen('roster')}
           onOpenChat={settings.chatEnabled ? (name) => void openTalk(name, 'chat') : undefined}
           onOpenCoaching={
             settings.coachingEnabled ? (name) => void openTalk(name, 'coaching') : undefined
@@ -176,6 +186,8 @@ export function App() {
           onClose={() => setScreen('start')}
         />
       )}
+
+      {screen === 'roster' && <RosterScreen onClose={() => setScreen('start')} />}
 
       {screen === 'settings' && (
         <SettingsScreen settings={settings} onChange={setSettings} onClose={() => setScreen('start')} />

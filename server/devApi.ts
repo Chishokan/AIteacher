@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Plugin } from 'vite'
 import { handleVoiceChat } from './voiceChat'
+import { fetchStudents, isConfigured, type SupabaseOptions } from './students'
 import {
   AivisEngineError,
   DEFAULT_ENGINE_URL,
@@ -60,9 +61,11 @@ export interface ChatApiOptions {
   apiKey: string | undefined
   /** AivisSpeech Engine の場所。既定は 127.0.0.1:10101 */
   engineUrl: string
+  /** 生徒名簿を Supabase から読むときの設定。無ければ端末の名簿を使う */
+  supabase: SupabaseOptions
 }
 
-export function chatApiPlugin({ apiKey, engineUrl }: ChatApiOptions): Plugin {
+export function chatApiPlugin({ apiKey, engineUrl, supabase }: ChatApiOptions): Plugin {
   return {
     name: 'aitecher-chat-api',
     // 本番のビルドには含めない
@@ -142,9 +145,39 @@ export function chatApiPlugin({ apiKey, engineUrl }: ChatApiOptions): Plugin {
         })()
       })
 
+      // 生徒名簿。Supabase を設定していなければ「未設定」を返すだけ
+      server.middlewares.use('/api/students', (req, res) => {
+        void (async () => {
+          const startedAt = Date.now()
+          const result = await fetchStudents(supabase)
+          if (result.ok) {
+            // 名簿の中身はログに残さない（個人情報のため）。件数と時間だけ
+            server.config.logger.info(
+              `  [students] ${result.rows.length}件 ${Date.now() - startedAt}ms`,
+            )
+            res.setHeader('cache-control', 'no-store')
+            sendJson(res, 200, { ok: true, rows: result.rows })
+            return
+          }
+          if (result.kind === 'unconfigured') {
+            sendJson(res, 200, { ok: false, kind: 'unconfigured', message: result.message })
+            return
+          }
+          server.config.logger.warn(`  [students] 失敗 (${Date.now() - startedAt}ms)`)
+          sendJson(res, 200, { ok: false, kind: 'error', message: result.message })
+        })()
+      })
+
       const ready = apiKey ? 'ANTHROPIC_API_KEY を読み込みました' : 'ANTHROPIC_API_KEY が未設定です（雑談の返事は作れません）'
       server.config.logger.info(`  ➜  雑談 API: /api/voice-chat  ${ready}`)
       server.config.logger.info(`  ➜  音声 API: /api/tts  AivisSpeech = ${engineUrl}`)
+      server.config.logger.info(
+        `  ➜  名簿 API: /api/students  ${
+          isConfigured(supabase)
+            ? `Supabase = ${supabase.url}（テーブル ${supabase.table || 'students'}）`
+            : 'Supabase は未設定（端末に取り込んだ名簿を使います）'
+        }`,
+      )
     },
   }
 }
